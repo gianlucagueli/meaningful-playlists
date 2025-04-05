@@ -1,5 +1,6 @@
 package com.meaningfulplaylists.domain.usecases
 
+import com.meaningfulplaylists.domain.exceptions.TrackNotFoundException
 import com.meaningfulplaylists.domain.repositories.MusicProviderRepository
 import com.meaningfulplaylists.utils.TestUtils
 import spock.lang.Specification
@@ -23,7 +24,7 @@ class CreatePlaylistUseCaseTest extends Specification {
         String title1 = "title1"
         String title2 = "title2"
         String title3 = "title3"
-        titleList = Arrays.asList(title1, title2, title3)
+        titleList = List.of(title1, title2, title3)
 
         when:
         useCase.createPlaylist(userId, playlistName, titleList)
@@ -40,6 +41,18 @@ class CreatePlaylistUseCaseTest extends Specification {
         useCase.collectedTracks.containsKey(title3)
         useCase.collectedTracks.get(title3) == TestUtils.createTrack(title3)
     }
+
+//    def "CreatePlaylist - given a valid input, throw TrackNotFoundException repo returns an empty optional"() {
+//        String title = "song-title"
+//        titleList = List.of(title)
+//
+//        when:
+//        useCase.createPlaylist(userId, playlistName, titleList)
+//
+//        then:
+//        1 * mockRepository.findByTitle(title) >> Optional.empty()
+//        thrown(TrackNotFoundException)
+//    }
 
     // todo: test exception, test collectedTrakcs checked before calling repo
 }

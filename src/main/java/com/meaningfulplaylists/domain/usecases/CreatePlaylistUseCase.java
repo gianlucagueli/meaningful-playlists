@@ -1,6 +1,7 @@
 package com.meaningfulplaylists.domain.usecases;
 
 import com.meaningfulplaylists.domain.exceptions.TrackNotFoundException;
+import com.meaningfulplaylists.domain.models.Owner;
 import com.meaningfulplaylists.domain.models.Playlist;
 import com.meaningfulplaylists.domain.models.Track;
 import com.meaningfulplaylists.domain.repositories.MusicProviderRepository;
@@ -21,14 +22,14 @@ public class CreatePlaylistUseCase {
     }
 
     public Playlist createPlaylist(String userId, String playlistName, List<String> titleList) {
-        try {
-            List<Track> trackList = findTracksByTitle(titleList);
-        } catch (TrackNotFoundException e) {
-            log.error("Error while creating playlist. ", e);
-        }
+        Owner owner = new Owner(userId);
+        List<Track> trackList = findTracksByTitle(titleList);
 
-        // todo: implement next part
-        return null;
+        Playlist playlist = new Playlist(playlistName, "", owner, true, trackList);
+
+        musicProviderRepository.createPlaylist(playlist);
+
+        return playlist;
     }
 
     private List<Track> findTracksByTitle(List<String> titleList) {
