@@ -1,7 +1,5 @@
 package com.meaningfulplaylists.domain.usecases;
 
-import com.meaningfulplaylists.domain.exceptions.TrackNotFoundException;
-import com.meaningfulplaylists.domain.models.Owner;
 import com.meaningfulplaylists.domain.models.Playlist;
 import com.meaningfulplaylists.domain.models.Track;
 import com.meaningfulplaylists.domain.repositories.MusicProviderRepository;
@@ -13,19 +11,19 @@ import java.util.*;
 @Slf4j
 @Component
 public class CreatePlaylistUseCase {
+    private static final String DEFAULT_DESCRIPTION = "";
     private final MusicProviderRepository musicProviderRepository;
-    private final Map<String, Track> collectedTracks;
+    private final Map<String, Track> collectedTracks; //fixme: non dovrebbe stare qui, piu giusto nel repository
 
     public CreatePlaylistUseCase(MusicProviderRepository musicProviderRepository) {
         this.musicProviderRepository = musicProviderRepository;
         this.collectedTracks = new HashMap<>();
     }
 
-    public Playlist createPlaylist(String userId, String playlistName, List<String> titleList) {
-        Owner owner = new Owner(userId);
+    public Playlist createPlaylist(String stateAssociated, String playlistName, List<String> titleList) {
         List<Track> trackList = findTracksByTitle(titleList);
 
-        Playlist playlist = new Playlist(playlistName, "", owner, true, trackList);
+        Playlist playlist = new Playlist(playlistName, DEFAULT_DESCRIPTION, stateAssociated, true, trackList);
 
         musicProviderRepository.createPlaylist(playlist);
 
@@ -46,9 +44,8 @@ public class CreatePlaylistUseCase {
             return collectedTracks.get(title);
         }
 
-        Track track = musicProviderRepository
-                .findByTitle(title)
-                .orElseThrow(() -> new TrackNotFoundException(title));
+        Track track = musicProviderRepository.findByTitle(title);
+        log.info("Found track: {}", track);
 
         collectedTracks.put(title, track);
         return track;

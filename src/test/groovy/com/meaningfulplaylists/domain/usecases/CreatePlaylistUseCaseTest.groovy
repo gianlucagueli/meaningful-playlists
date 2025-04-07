@@ -1,6 +1,5 @@
 package com.meaningfulplaylists.domain.usecases
 
-import com.meaningfulplaylists.domain.exceptions.TrackNotFoundException
 import com.meaningfulplaylists.domain.repositories.MusicProviderRepository
 import com.meaningfulplaylists.utils.TestUtils
 import spock.lang.Specification
@@ -30,9 +29,9 @@ class CreatePlaylistUseCaseTest extends Specification {
         useCase.createPlaylist(userId, playlistName, titleList)
 
         then:
-        1 * mockRepository.findByTitle(title1) >> Optional.of(TestUtils.createTrack(title1))
-        1 * mockRepository.findByTitle(title2) >> Optional.of(TestUtils.createTrack(title2))
-        1 * mockRepository.findByTitle(title3) >> Optional.of(TestUtils.createTrack(title3))
+        1 * mockRepository.findByTitle(title1) >> TestUtils.createTrack(title1)
+        1 * mockRepository.findByTitle(title2) >> TestUtils.createTrack(title2)
+        1 * mockRepository.findByTitle(title3) >> TestUtils.createTrack(title3)
         useCase.collectedTracks.size() == 3
         useCase.collectedTracks.containsKey(title1)
         useCase.collectedTracks.get(title1) == TestUtils.createTrack(title1)
@@ -41,18 +40,4 @@ class CreatePlaylistUseCaseTest extends Specification {
         useCase.collectedTracks.containsKey(title3)
         useCase.collectedTracks.get(title3) == TestUtils.createTrack(title3)
     }
-
-//    def "CreatePlaylist - given a valid input, throw TrackNotFoundException repo returns an empty optional"() {
-//        String title = "song-title"
-//        titleList = List.of(title)
-//
-//        when:
-//        useCase.createPlaylist(userId, playlistName, titleList)
-//
-//        then:
-//        1 * mockRepository.findByTitle(title) >> Optional.empty()
-//        thrown(TrackNotFoundException)
-//    }
-
-    // todo: test exception, test collectedTrakcs checked before calling repo
 }
