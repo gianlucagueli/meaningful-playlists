@@ -22,6 +22,8 @@ class RedirectUseCaseTest extends Specification {
 
         then:
         1 * mockAuthService.createRedirectUrl(inputAction) >> expected
+
+        and:
         result == expected
     }
 }

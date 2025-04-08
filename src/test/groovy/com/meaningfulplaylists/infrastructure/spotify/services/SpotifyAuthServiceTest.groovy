@@ -4,6 +4,7 @@ import com.meaningfulplaylists.domain.models.Action
 import com.meaningfulplaylists.infrastructure.spotify.SpotifyAccount
 import com.meaningfulplaylists.infrastructure.spotify.SpotifyApi
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig
+import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyMissingStateException
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile
 import com.meaningfulplaylists.utils.TestUtils
@@ -49,6 +50,8 @@ class SpotifyAuthServiceTest extends Specification {
         then:
         1 * redirectUrlBuilder.generateRandomState() >> randomState
         1 * redirectUrlBuilder.generateRedirectUrl(randomState, action) >> generatedUrl
+
+        and:
         generatedUrl == result
         authService.mapStateUserId.containsKey(randomState)
     }
@@ -70,12 +73,48 @@ class SpotifyAuthServiceTest extends Specification {
         1 * mockSpotifyAccount.getAccessToken(_, code, redirectUri, clientId, clientSecret) >> mockCall
         1 * mockCall.execute() >> Response.success(fakeResponse)
         1 * mockConfigs.getSpotifyApi() >> mockSpotifyApi
-        1 * mockSpotifyApi.getCurrentUserProfile(fakeResponse.accessToken()) >> mockCall
+        1 * mockSpotifyApi.getCurrentUserProfile("Bearer " + fakeResponse.accessToken()) >> mockCall
         1 * mockCall.execute() >> Response.success(fakeUserProfile)
 
+        and:
         authService.mapStateUserId.get(state) == fakeUserProfile.id()
         authService.users.containsKey(fakeUserProfile.id())
     }
 
+    def "HandleCallback - should throw an exception if no state is found"() {
+        given:
+        String missingState = "12345-abcd"
 
+        when:
+        authService.handleCallback(_ as String, missingState)
+
+        then:
+        thrown(SpotifyMissingStateException)
+    }
+
+    def "getUserIdFromState - should return the userId associated the given state"() {
+        given:
+        String state = "state-user-id"
+        String userId = "user-id"
+        authService.mapStateUserId.put(state, userId)
+
+        when:
+        String result = authService.getUserIdFromState(state)
+
+        then:
+        result == userId
+    }
+
+    def "getUserAuthorization - should return the Authorization header for the given userId"() {
+        given:
+        SpotifyTokenResponse fakeResponse = TestUtils.createSpotifyTokenResponse()
+        String userId = "user-id"
+        authService.users.put(userId, fakeResponse)
+
+        when:
+        String result = authService.getUserAuthorization(userId)
+
+        then:
+        result == "Bearer ${fakeResponse.accessToken()}"
+    }
 }

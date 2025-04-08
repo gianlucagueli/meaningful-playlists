@@ -8,7 +8,6 @@ public class SpotifyMapper {
         return new Track(
                 spotifyTrack.id(),
                 spotifyTrack.name(),
-                spotifyTrack.artists().getFirst().name(), // fixme: sistema questo
                 spotifyTrack.uri()
         );
     }

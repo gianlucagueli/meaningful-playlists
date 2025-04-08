@@ -41,23 +41,18 @@ public class SpotifyRepository implements MusicProviderRepository {
 
     @Override
     public void createPlaylist(Playlist playlist) {
-        String userId = authService.getSpotifyUserIdForState(playlist.stateAssociated());
+        log.info("Creating playlist {}", playlist.name());
+
+        String userId = authService.getUserIdFromState(playlist.stateAssociated());
         String authToken = authService.getUserAuthorization(userId);
 
-        SpotifyCreatePlaylistResponse playlistResponse = createPlaylist(userId, authToken, playlist);
+        SpotifyCreatePlaylistResponse playlistResponse = createPlaylist(authToken, userId, playlist);
+        updatePlaylist(authToken, playlistResponse.id(), playlist);
 
-        if (playlist.tracks() != null && !playlist.tracks().isEmpty()) {
-            SpotifyAddTracksRequest addTracksRequest = new SpotifyAddTracksRequest(playlist.tracks().stream().map(Track::uri).toList(), 0);
-
-            Call<Void> addTracksCall = spotifyConfig.getSpotifyApi()
-                    .addTracksToPlaylist(authToken, playlistResponse.id(), addTracksRequest);
-
-            RetrofitUtils.safeExecute(addTracksCall)
-                    .orElseThrow(() -> new RuntimeException("Failed to add tracks to playlist"));
-        }
+        log.info("Playlist [{}:{}] created successfully", playlistResponse.id(), playlist.name());
     }
 
-    private SpotifyCreatePlaylistResponse createPlaylist(String userId, String authToken, Playlist playlist) {
+    private SpotifyCreatePlaylistResponse createPlaylist(String authToken, String userId, Playlist playlist) {
         SpotifyCreatePlaylistRequest request = new SpotifyCreatePlaylistRequest(
                 playlist.name(),
                 playlist.description(),
@@ -65,6 +60,20 @@ public class SpotifyRepository implements MusicProviderRepository {
         );
 
         Call<SpotifyCreatePlaylistResponse> call = spotifyConfig.getSpotifyApi().createPlaylist(authToken, userId, request);
-        return RetrofitUtils.safeExecute(call).orElseThrow();
+        return RetrofitUtils.safeExecute(call)
+                .orElseThrow(() -> new RuntimeException("Failed to create playlist for userId: " + userId));
+    }
+
+    private void updatePlaylist(String authToken, String playlistId, Playlist playlist) {
+        if (playlist.tracks() == null || playlist.tracks().isEmpty()) {
+            log.info("No track present in playlist {}, leaving...", playlist.name());
+            return;
+        }
+
+        SpotifyAddTracksRequest addTracksRequest = new SpotifyAddTracksRequest(playlist.tracks().stream().map(Track::uri).toList(), 0);
+        Call<Void> addTracksCall = spotifyConfig.getSpotifyApi().addTracksToPlaylist(authToken, playlistId, addTracksRequest);
+
+        RetrofitUtils.safeExecute(addTracksCall)
+                .orElseThrow(() -> new RuntimeException("Failed to add tracks to playlist"));
     }
 }

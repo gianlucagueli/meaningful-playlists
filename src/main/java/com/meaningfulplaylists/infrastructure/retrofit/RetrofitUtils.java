@@ -37,7 +37,6 @@ public class RetrofitUtils {
                 .client(buildOkHttpClient())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-
     }
 
     public Retrofit buildRetrofitWithAuthInterceptor(String baseUrl) {
@@ -46,7 +45,6 @@ public class RetrofitUtils {
                 .client(buildOkHttpClientWithAuthInterceptor())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-
     }
 
     public static <T> Optional<T> safeExecute(Call<T> call) {

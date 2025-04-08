@@ -3,6 +3,7 @@ package com.meaningfulplaylists.infrastructure.spotify.services;
 import com.meaningfulplaylists.domain.models.Action;
 import com.meaningfulplaylists.domain.repositories.AuthService;
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig;
+import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyMissingStateException;
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse;
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile;
 import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
@@ -58,7 +59,7 @@ public class SpotifyAuthService implements AuthService {
     // todo: aggiungere meccanismo di controllo scadenza e recupero
     public void handleCallback(String code, String state) {
         if (!mapStateUserId.containsKey(state)) {
-            throw new RuntimeException("State " + state + " not found");
+            throw new SpotifyMissingStateException(state);
         }
 
         SpotifyTokenResponse response = exchangeCodeForToken(code);
@@ -68,7 +69,7 @@ public class SpotifyAuthService implements AuthService {
         users.put(userId, response);
     }
 
-    public String getSpotifyUserIdForState(String state) {
+    public String getUserIdFromState(String state) {
         return mapStateUserId.get(state);
     }
 
