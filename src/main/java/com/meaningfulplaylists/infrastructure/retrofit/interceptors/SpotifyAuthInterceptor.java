@@ -1,4 +1,4 @@
-package com.meaningfulplaylists.infrastructure.spotify.config;
+package com.meaningfulplaylists.infrastructure.retrofit.interceptors;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

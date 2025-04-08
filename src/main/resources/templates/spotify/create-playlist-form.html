@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>meaningful-playlist</title>
+</head>
+<body>
+<form method="post" action="/spotify">
+    <input type="hidden" name="state" th:value="${state}"/>
+
+    <label for="playlistName">Playlist:</label><br>
+    <input type="text" id="playlistName" name="playlistName"><br><br>
+
+    <label for="keywords">Tracks (separated by a comma):</label><br>
+    <textarea id="keywords" name="keywords" rows="5" cols="30"></textarea><br><br>
+
+    <button type="submit">Submit</button>
+</form>
+</body>
+</html>

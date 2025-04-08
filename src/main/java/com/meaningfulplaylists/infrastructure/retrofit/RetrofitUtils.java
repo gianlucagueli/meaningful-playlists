@@ -1,6 +1,6 @@
 package com.meaningfulplaylists.infrastructure.retrofit;
 
-import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyAuthInterceptor;
+import com.meaningfulplaylists.infrastructure.retrofit.interceptors.SpotifyAuthInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;

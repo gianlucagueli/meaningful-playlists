@@ -2,7 +2,7 @@ package com.meaningfulplaylists.infrastructure.spotify.configs;
 
 import com.meaningfulplaylists.infrastructure.spotify.SpotifyAccount;
 import com.meaningfulplaylists.infrastructure.spotify.SpotifyApi;
-import com.meaningfulplaylists.infrastructure.spotify.retrofit.RetrofitUtils;
+import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
