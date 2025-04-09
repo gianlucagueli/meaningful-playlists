@@ -4,11 +4,10 @@ import com.meaningfulplaylists.domain.models.Action;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
 import java.util.Random;
 
 @Component
-public class SpotifyRedirectUrlBuilder {
+public class SpotifyRedirectUrlFactory {
     private static final String ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final int STATE_LENGTH = 10;
 
@@ -17,14 +16,17 @@ public class SpotifyRedirectUrlBuilder {
     String spotifyAccountBaseUrl;
     String clientId;
     String redirectUrl;
+    String responseType;
 
-    SpotifyRedirectUrlBuilder(@Value("${spotify.account.baseUrl}") String spotifyAccountBaseUrl,
+    SpotifyRedirectUrlFactory(@Value("${spotify.account.baseUrl}") String spotifyAccountBaseUrl,
                               @Value("${spotify.client.id}") String clientId,
-                              @Value("${spotify.client.redirectUri}") String redirectUrl) {
+                              @Value("${spotify.client.redirectUri}") String redirectUrl,
+                              @Value("${spotify.client.responseType}") String responseType) {
         random = new Random();
         this.spotifyAccountBaseUrl = spotifyAccountBaseUrl;
         this.clientId = clientId;
         this.redirectUrl = redirectUrl;
+        this.responseType = responseType;
     }
 
     public String generateRandomState() {
@@ -40,7 +42,7 @@ public class SpotifyRedirectUrlBuilder {
 
     public String generateRedirectUrl(String state, Action action) {
         return spotifyAccountBaseUrl +
-                "authorize?response_type=code" +
+                "authorize?response_type=" + responseType +
                 "&client_id=" + clientId +
                 "&redirect_uri=" + redirectUrl +
                 "&state=" + state +

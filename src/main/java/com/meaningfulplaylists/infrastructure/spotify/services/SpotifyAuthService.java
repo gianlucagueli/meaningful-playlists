@@ -21,7 +21,7 @@ public class SpotifyAuthService implements AuthService {
     private static final String SPOTIFY_CLIENT_CREDENTIALS = "client_credentials";
 
     private final SpotifyConfig configs;
-    private final SpotifyRedirectUrlBuilder redirectUrlBuilder;
+    private final SpotifyRedirectUrlFactory urlFactory;
 
     private final String clientId;
     private final String clientSecret;
@@ -32,12 +32,12 @@ public class SpotifyAuthService implements AuthService {
     Map<String, SpotifyTokenResponse> users;
 
     SpotifyAuthService(SpotifyConfig configs,
-                       SpotifyRedirectUrlBuilder redirectUrlBuilder,
+                       SpotifyRedirectUrlFactory urlFactory,
                        @Value("${spotify.client.id}") String clientId,
                        @Value("${spotify.client.secret}") String clientSecret,
                        @Value("${spotify.client.redirectUri}") String redirectUri) {
         this.configs = configs;
-        this.redirectUrlBuilder = redirectUrlBuilder;
+        this.urlFactory = urlFactory;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.redirectUri = redirectUri;
@@ -47,12 +47,12 @@ public class SpotifyAuthService implements AuthService {
 
     @Override
     public String createRedirectUrl(Action action) {
-        String state = redirectUrlBuilder.generateRandomState();
+        String state = urlFactory.generateRandomState();
         mapStateUserId.put(state, null); // fixme: meh, rivedere
 
         log.info("Creating url for state: {}", state);
 
-        return redirectUrlBuilder.generateRedirectUrl(state, action);
+        return urlFactory.generateRedirectUrl(state, action);
     }
 
     @Override

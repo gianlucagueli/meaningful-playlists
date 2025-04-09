@@ -18,7 +18,7 @@ class SpotifyAuthServiceTest extends Specification {
     SpotifyApi mockSpotifyApi
 
     Call mockCall
-    SpotifyRedirectUrlBuilder redirectUrlBuilder;
+    SpotifyRedirectUrlFactory urlFactory;
 
     SpotifyAuthService authService
 
@@ -33,9 +33,9 @@ class SpotifyAuthServiceTest extends Specification {
         mockSpotifyApi = Mock(SpotifyApi)
         mockCall = Mock(Call)
 
-        redirectUrlBuilder = Mock(SpotifyRedirectUrlBuilder)
+        urlFactory = Mock(SpotifyRedirectUrlFactory)
 
-        authService = new SpotifyAuthService(mockConfigs, redirectUrlBuilder, clientId, clientSecret, redirectUri)
+        authService = new SpotifyAuthService(mockConfigs, urlFactory, clientId, clientSecret, redirectUri)
     }
 
     def "CreateRedirectUrl - should generate a redirect URL and map the state to a user session"() {
@@ -48,8 +48,8 @@ class SpotifyAuthServiceTest extends Specification {
         String result = authService.createRedirectUrl(action)
 
         then:
-        1 * redirectUrlBuilder.generateRandomState() >> randomState
-        1 * redirectUrlBuilder.generateRedirectUrl(randomState, action) >> generatedUrl
+        1 * urlFactory.generateRandomState() >> randomState
+        1 * urlFactory.generateRedirectUrl(randomState, action) >> generatedUrl
 
         and:
         generatedUrl == result
