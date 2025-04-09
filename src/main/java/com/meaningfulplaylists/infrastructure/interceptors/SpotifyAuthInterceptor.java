@@ -1,4 +1,4 @@
-package com.meaningfulplaylists.infrastructure.retrofit.interceptors;
+package com.meaningfulplaylists.infrastructure.interceptors;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

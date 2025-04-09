@@ -1,5 +1,6 @@
 package com.meaningfulplaylists.infrastructure.retrofit.interceptors
 
+import com.meaningfulplaylists.infrastructure.interceptors.SpotifyAuthInterceptor
 import okhttp3.*
 import spock.lang.Specification
 
