@@ -1,11 +1,11 @@
 package com.meaningfulplaylists.infrastructure.interceptors;
 
+import com.meaningfulplaylists.infrastructure.redis.repository.ClientRedisRepository;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -14,11 +14,10 @@ import java.io.IOException;
 @Setter
 @Component
 public class SpotifyAuthInterceptor implements Interceptor {
-    private String accessToken;
+    private final ClientRedisRepository clientRepository;
 
-    //todo: piu avanti spostare su redis e togliere sta roba
-    public SpotifyAuthInterceptor(@Value("${spotify.client.authorization}") String accessToken) {
-        this.accessToken = accessToken;
+    public SpotifyAuthInterceptor(ClientRedisRepository clientRepository) {
+        this.clientRepository = clientRepository;
     }
 
     @Override
@@ -31,9 +30,13 @@ public class SpotifyAuthInterceptor implements Interceptor {
 
         log.info("Attaching Authorization header to request: {}", original.url());
         Request request = original.newBuilder()
-            .header("Authorization", "Bearer " + accessToken)
+            .header("Authorization", getAccessToken())
             .build();
 
         return chain.proceed(request);
+    }
+
+    private String getAccessToken() {
+        return "Bearer " + clientRepository.find().accessToken();
     }
 } 

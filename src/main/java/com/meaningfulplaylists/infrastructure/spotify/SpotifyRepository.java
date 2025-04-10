@@ -43,6 +43,7 @@ public class SpotifyRepository implements MusicProviderRepository {
     public void createPlaylist(Playlist playlist) {
         log.info("Creating playlist {}", playlist.name());
 
+        // fixme: questa classe non dovrebbe occuparsi di auth
         String userId = authService.getUserIdFromState(playlist.stateAssociated());
         String authToken = authService.getUserAuthorization(userId);
 
@@ -51,6 +52,7 @@ public class SpotifyRepository implements MusicProviderRepository {
 
         log.info("Playlist [{}:{}] created successfully", playlistResponse.id(), playlist.name());
     }
+
 
     private SpotifyCreatePlaylistResponse createPlaylist(String authToken, String userId, Playlist playlist) {
         SpotifyCreatePlaylistRequest request = new SpotifyCreatePlaylistRequest(

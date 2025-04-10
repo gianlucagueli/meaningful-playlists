@@ -2,8 +2,9 @@ package com.meaningfulplaylists.infrastructure.spotify.services;
 
 import com.meaningfulplaylists.domain.models.Action;
 import com.meaningfulplaylists.domain.repositories.AuthService;
+import com.meaningfulplaylists.infrastructure.redis.repository.ClientRedisRepository;
+import com.meaningfulplaylists.infrastructure.redis.repository.UserRedisRepository;
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig;
-import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyMissingStateException;
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse;
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile;
 import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
@@ -26,29 +27,31 @@ public class SpotifyAuthService implements AuthService {
     private final String clientId;
     private final String clientSecret;
     private final String redirectUri;
-
-    //fixme: rivedere questa parte -> in futuro magari un redis
-    Map<String, String> mapStateUserId;
-    Map<String, SpotifyTokenResponse> users;
+    private final UserRedisRepository userRepository;
+    private final ClientRedisRepository clientRepository;
 
     SpotifyAuthService(SpotifyConfig configs,
                        SpotifyRedirectUrlFactory urlFactory,
+                       UserRedisRepository userRepository,
+                       ClientRedisRepository clientRepository,
                        @Value("${spotify.client.id}") String clientId,
                        @Value("${spotify.client.secret}") String clientSecret,
                        @Value("${spotify.client.redirectUri}") String redirectUri) {
+        this.userRepository = userRepository;
+        this.clientRepository = clientRepository;
         this.configs = configs;
         this.urlFactory = urlFactory;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.redirectUri = redirectUri;
-        this.mapStateUserId = new HashMap<>();
-        this.users = new HashMap<>();
+
+        this.getClientToken();
     }
 
     @Override
     public String createRedirectUrl(Action action) {
         String state = urlFactory.generateRandomState();
-        mapStateUserId.put(state, null); // fixme: meh, rivedere
+        userRepository.saveState(state, "");
 
         log.info("Creating url for state: {}", state);
 
@@ -56,28 +59,25 @@ public class SpotifyAuthService implements AuthService {
     }
 
     @Override
-    // todo: aggiungere meccanismo di controllo scadenza e recupero
+    // todo: aggiungere meccanismo di controllo scadenza e recupero (catch eccezione e retry?)
     public void handleCallback(String code, String state) {
-        if (!mapStateUserId.containsKey(state)) {
-            throw new SpotifyMissingStateException(state);
-        }
-
         SpotifyTokenResponse response = exchangeCodeForToken(code);
         String userId = getCurrentUserId(state, response.accessToken());
 
-        mapStateUserId.put(state, userId);
-        users.put(userId, response);
+        userRepository.saveState(state, userId);
+        userRepository.saveUser(userId, response);
     }
 
     public String getUserIdFromState(String state) {
-        return mapStateUserId.get(state);
+        return userRepository.findUserIdByState(state);
     }
 
     public String getUserAuthorization(String userId) {
-        SpotifyTokenResponse tokenResponse = users.get(userId);
+        SpotifyTokenResponse tokenResponse = userRepository.findTokenByUserId(userId);
 
         return "Bearer " + tokenResponse.accessToken();
     }
+
 
     private SpotifyTokenResponse exchangeCodeForToken(String code) {
         Call<SpotifyTokenResponse> call = configs.getSpotifyAccount().getAccessToken(
@@ -90,6 +90,23 @@ public class SpotifyAuthService implements AuthService {
 
         return RetrofitUtils.safeExecute(call)
                 .orElseThrow(() -> new RuntimeException("Error retrieving access token for code: " + code));
+    }
+
+    private void getClientToken() {
+        log.info("Getting client token...");
+        Call<SpotifyTokenResponse> call = configs.getSpotifyAccount().getAccessToken(
+                SPOTIFY_CLIENT_CREDENTIALS,
+                null,
+                null,
+                clientId,
+                clientSecret
+        );
+
+        SpotifyTokenResponse response = RetrofitUtils.safeExecute(call)
+                .orElseThrow(() -> new RuntimeException("Error retrieving client auth token"));
+
+        clientRepository.save(response);
+        log.info("Client token retrieved successfully.");
     }
 
     private String getCurrentUserId(String state, String accessToken) {

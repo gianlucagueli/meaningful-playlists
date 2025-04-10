@@ -8,6 +8,7 @@ import java.util.Random;
 
 @Component
 public class SpotifyRedirectUrlFactory {
+    private static final String RESPONSE_TYPE = "code";
     private static final String ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final int STATE_LENGTH = 10;
 
@@ -16,17 +17,14 @@ public class SpotifyRedirectUrlFactory {
     String spotifyAccountBaseUrl;
     String clientId;
     String redirectUrl;
-    String responseType;
 
     SpotifyRedirectUrlFactory(@Value("${spotify.account.baseUrl}") String spotifyAccountBaseUrl,
                               @Value("${spotify.client.id}") String clientId,
-                              @Value("${spotify.client.redirectUri}") String redirectUrl,
-                              @Value("${spotify.client.responseType}") String responseType) {
+                              @Value("${spotify.client.redirectUri}") String redirectUrl) {
         random = new Random();
         this.spotifyAccountBaseUrl = spotifyAccountBaseUrl;
         this.clientId = clientId;
         this.redirectUrl = redirectUrl;
-        this.responseType = responseType;
     }
 
     public String generateRandomState() {
@@ -42,7 +40,7 @@ public class SpotifyRedirectUrlFactory {
 
     public String generateRedirectUrl(String state, Action action) {
         return spotifyAccountBaseUrl +
-                "authorize?response_type=" + responseType +
+                "authorize?response_type=" + RESPONSE_TYPE +
                 "&client_id=" + clientId +
                 "&redirect_uri=" + redirectUrl +
                 "&state=" + state +
