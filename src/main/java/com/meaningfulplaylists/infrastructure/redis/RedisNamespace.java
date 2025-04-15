@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum RedisNamespace {
     CLIENT("client:"),
     STATE("states:"),
+    TRACK("tracks:"),
     USER("users:");
 
     private final String prefix;

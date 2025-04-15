@@ -2,7 +2,8 @@ package com.meaningfulplaylists.infrastructure.spotify.services;
 
 import com.meaningfulplaylists.domain.models.Playlist;
 import com.meaningfulplaylists.domain.models.Track;
-import com.meaningfulplaylists.domain.repositories.MusicProviderRepository;
+import com.meaningfulplaylists.domain.repositories.MusicProvider;
+import com.meaningfulplaylists.infrastructure.redis.repository.TracksRedisRepository;
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig;
 import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyTrackNotFoundException;
 import com.meaningfulplaylists.infrastructure.spotify.models.*;
@@ -14,28 +15,43 @@ import retrofit2.Call;
 
 @Slf4j
 @Component
-public class SpotifyRepository implements MusicProviderRepository {
+public class SpotifyMusicService implements MusicProvider {
     SpotifyConfig spotifyConfig;
     SpotifyAuthService authService;
+    TracksRedisRepository tracksRepository;
 
-    SpotifyRepository(SpotifyConfig spotifyConfig, SpotifyAuthService authService) {
+    SpotifyMusicService(SpotifyConfig spotifyConfig,
+                        SpotifyAuthService authService,
+                        TracksRedisRepository tracksRepository) {
         this.spotifyConfig = spotifyConfig;
         this.authService = authService;
+        this.tracksRepository = tracksRepository;
     }
 
     @Override
     public Track findByTitle(String title) {
-        String type = "track"; // todo: fare un enum
-        int SEARCH_LIMIT = 1;
+        return tracksRepository.findByName(title)
+                .orElse(retrieveTrackFromSpotify(title));
+    }
 
-        Call<SpotifySearchResponse> call = spotifyConfig.getSpotifyApi().searchTracks(title, type, SEARCH_LIMIT);
+    private Track retrieveTrackFromSpotify(String title) {
+        int SEARCH_LIMIT = 10;
+        Call<SpotifySearchResponse> call = spotifyConfig.getSpotifyApi()
+                .searchTracks(
+                        title,
+                        SpotifySearchType.TRACK.name(),
+                        SEARCH_LIMIT
+                );
 
-        return RetrofitUtils.safeExecute(call)
+        Track track = RetrofitUtils.safeExecute(call)
                 .map(SpotifySearchResponse::tracks)
                 .map(SpotifyTracks::items)
                 .flatMap(items -> items.stream().findFirst())
                 .map(SpotifyMapper::mapToDomain)
                 .orElseThrow(() -> new SpotifyTrackNotFoundException(title));
+
+        tracksRepository.save(track);
+        return track;
     }
 
     @Override

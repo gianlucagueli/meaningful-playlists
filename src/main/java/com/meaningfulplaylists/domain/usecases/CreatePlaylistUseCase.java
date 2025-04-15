@@ -2,7 +2,7 @@ package com.meaningfulplaylists.domain.usecases;
 
 import com.meaningfulplaylists.domain.models.Playlist;
 import com.meaningfulplaylists.domain.models.Track;
-import com.meaningfulplaylists.domain.repositories.MusicProviderRepository;
+import com.meaningfulplaylists.domain.repositories.MusicProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -12,12 +12,10 @@ import java.util.*;
 @Component
 public class CreatePlaylistUseCase {
     private static final String DEFAULT_DESCRIPTION = "";
-    private final MusicProviderRepository musicProviderRepository;
-    private final Map<String, Track> collectedTracks; //fixme: non dovrebbe stare qui, piu giusto nel repository
+    private final MusicProvider musicProvider;
 
-    public CreatePlaylistUseCase(MusicProviderRepository musicProviderRepository) {
-        this.musicProviderRepository = musicProviderRepository;
-        this.collectedTracks = new HashMap<>();
+    public CreatePlaylistUseCase(MusicProvider musicProvider) {
+        this.musicProvider = musicProvider;
     }
 
     public Playlist createPlaylist(String stateAssociated, String playlistName, List<String> titleList) {
@@ -25,7 +23,7 @@ public class CreatePlaylistUseCase {
 
         Playlist playlist = new Playlist(playlistName, DEFAULT_DESCRIPTION, stateAssociated, true, trackList);
 
-        musicProviderRepository.createPlaylist(playlist);
+        musicProvider.createPlaylist(playlist);
 
         return playlist;
     }
@@ -40,14 +38,9 @@ public class CreatePlaylistUseCase {
     }
 
     private Track findTrackByTitle(String title) {
-        if (collectedTracks.containsKey(title)) {
-            return collectedTracks.get(title);
-        }
-
-        Track track = musicProviderRepository.findByTitle(title);
+        Track track = musicProvider.findByTitle(title);
         log.info("Found track: {}", track);
 
-        collectedTracks.put(title, track);
         return track;
     }
 }
