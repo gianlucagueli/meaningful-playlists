@@ -5,15 +5,15 @@ import com.meaningfulplaylists.domain.repositories.AuthService;
 import com.meaningfulplaylists.infrastructure.redis.repository.ClientRedisRepository;
 import com.meaningfulplaylists.infrastructure.redis.repository.UserRedisRepository;
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig;
+import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties;
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse;
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile;
 import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
+import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRedirectUrlFactory;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import retrofit2.Call;
-
-import java.util.*;
 
 @Slf4j
 @Component
@@ -22,30 +22,27 @@ public class SpotifyAuthService implements AuthService {
     private static final String SPOTIFY_CLIENT_CREDENTIALS = "client_credentials";
 
     private final SpotifyConfig configs;
+    private final SpotifyProperties properties;
+    private final ClientRedisRepository clientRepository;
+    private final UserRedisRepository userRepository;
     private final SpotifyRedirectUrlFactory urlFactory;
 
-    private final String clientId;
-    private final String clientSecret;
-    private final String redirectUri;
-    private final UserRedisRepository userRepository;
-    private final ClientRedisRepository clientRepository;
 
     SpotifyAuthService(SpotifyConfig configs,
-                       SpotifyRedirectUrlFactory urlFactory,
-                       UserRedisRepository userRepository,
+                       SpotifyProperties properties,
                        ClientRedisRepository clientRepository,
-                       @Value("${spotify.client.id}") String clientId,
-                       @Value("${spotify.client.secret}") String clientSecret,
-                       @Value("${spotify.client.redirectUri}") String redirectUri) {
-        this.userRepository = userRepository;
-        this.clientRepository = clientRepository;
+                       UserRedisRepository userRepository,
+                       SpotifyRedirectUrlFactory urlFactory) {
         this.configs = configs;
+        this.properties = properties;
+        this.clientRepository = clientRepository;
+        this.userRepository = userRepository;
         this.urlFactory = urlFactory;
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
-        this.redirectUri = redirectUri;
+    }
 
-        this.getClientToken();
+    @PostConstruct
+    private void init() {
+        getClientToken();
     }
 
     @Override
@@ -83,9 +80,9 @@ public class SpotifyAuthService implements AuthService {
         Call<SpotifyTokenResponse> call = configs.getSpotifyAccount().getAccessToken(
                 SPOTIFY_AUTH_CREDENTIALS,
                 code,
-                redirectUri,
-                clientId,
-                clientSecret
+                properties.redirectUri(),
+                properties.clientId(),
+                properties.clientSecret()
         );
 
         return RetrofitUtils.safeExecute(call)
@@ -98,8 +95,8 @@ public class SpotifyAuthService implements AuthService {
                 SPOTIFY_CLIENT_CREDENTIALS,
                 null,
                 null,
-                clientId,
-                clientSecret
+                properties.clientId(),
+                properties.clientSecret()
         );
 
         SpotifyTokenResponse response = RetrofitUtils.safeExecute(call)

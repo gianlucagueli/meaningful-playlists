@@ -7,6 +7,7 @@ import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig
 import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyMissingStateException
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile
+import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRedirectUrlFactory
 import com.meaningfulplaylists.utils.TestUtils
 import retrofit2.Call
 import retrofit2.Response

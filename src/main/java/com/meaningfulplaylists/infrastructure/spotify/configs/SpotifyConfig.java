@@ -14,11 +14,9 @@ public class SpotifyConfig {
     private final SpotifyApi spotifyApi;
     private final SpotifyAccount spotifyAccount;
 
-    public SpotifyConfig(RetrofitUtils retrofitUtils,
-                         @Value("${spotify.api.baseUrl}") String apiBaseUrl,
-                         @Value("${spotify.account.baseUrl}") String accountBaseUrl) {
+    public SpotifyConfig(RetrofitUtils retrofitUtils, SpotifyProperties properties) {
         this.retrofitUtils = retrofitUtils;
-        this.spotifyAccount = retrofitUtils.buildRetrofit(accountBaseUrl).create(SpotifyAccount.class);
-        this.spotifyApi = retrofitUtils.buildRetrofitWithAuthInterceptor(apiBaseUrl).create(SpotifyApi.class);
+        this.spotifyAccount = retrofitUtils.buildRetrofit(properties.accountBaseUrl()).create(SpotifyAccount.class);
+        this.spotifyApi = retrofitUtils.buildRetrofitWithAuthInterceptor(properties.apiBaseUrl()).create(SpotifyApi.class);
     }
 }

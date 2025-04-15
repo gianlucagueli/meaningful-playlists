@@ -8,6 +8,7 @@ import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyAddTracksReq
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyCreatePlaylistResponse
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifySearchResponse
 import com.meaningfulplaylists.infrastructure.spotify.services.SpotifyAuthService
+import com.meaningfulplaylists.infrastructure.spotify.services.SpotifyRepository
 import com.meaningfulplaylists.utils.TestUtils
 import okhttp3.Request
 import retrofit2.Call

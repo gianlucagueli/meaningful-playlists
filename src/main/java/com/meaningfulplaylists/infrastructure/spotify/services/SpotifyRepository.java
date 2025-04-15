@@ -1,4 +1,4 @@
-package com.meaningfulplaylists.infrastructure.spotify;
+package com.meaningfulplaylists.infrastructure.spotify.services;
 
 import com.meaningfulplaylists.domain.models.Playlist;
 import com.meaningfulplaylists.domain.models.Track;
@@ -7,8 +7,7 @@ import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig;
 import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyTrackNotFoundException;
 import com.meaningfulplaylists.infrastructure.spotify.models.*;
 import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
-import com.meaningfulplaylists.infrastructure.spotify.services.SpotifyAuthService;
-import com.meaningfulplaylists.infrastructure.spotify.services.SpotifyMapper;
+import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import retrofit2.Call;

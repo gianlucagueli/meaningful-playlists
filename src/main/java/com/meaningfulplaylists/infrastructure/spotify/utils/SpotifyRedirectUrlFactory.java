@@ -1,7 +1,7 @@
-package com.meaningfulplaylists.infrastructure.spotify.services;
+package com.meaningfulplaylists.infrastructure.spotify.utils;
 
 import com.meaningfulplaylists.domain.models.Action;
-import org.springframework.beans.factory.annotation.Value;
+import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
@@ -14,17 +14,11 @@ public class SpotifyRedirectUrlFactory {
 
     Random random;
 
-    String spotifyAccountBaseUrl;
-    String clientId;
-    String redirectUrl;
+    private final SpotifyProperties properties;
 
-    SpotifyRedirectUrlFactory(@Value("${spotify.account.baseUrl}") String spotifyAccountBaseUrl,
-                              @Value("${spotify.client.id}") String clientId,
-                              @Value("${spotify.client.redirectUri}") String redirectUrl) {
+    SpotifyRedirectUrlFactory(SpotifyProperties properties) {
+        this.properties = properties;
         random = new Random();
-        this.spotifyAccountBaseUrl = spotifyAccountBaseUrl;
-        this.clientId = clientId;
-        this.redirectUrl = redirectUrl;
     }
 
     public String generateRandomState() {
@@ -39,10 +33,10 @@ public class SpotifyRedirectUrlFactory {
     }
 
     public String generateRedirectUrl(String state, Action action) {
-        return spotifyAccountBaseUrl +
+        return properties.accountBaseUrl() +
                 "authorize?response_type=" + RESPONSE_TYPE +
-                "&client_id=" + clientId +
-                "&redirect_uri=" + redirectUrl +
+                "&client_id=" + properties.clientId() +
+                "&redirect_uri=" + properties.redirectUri() +
                 "&state=" + state +
                 buildScope(action);
     }

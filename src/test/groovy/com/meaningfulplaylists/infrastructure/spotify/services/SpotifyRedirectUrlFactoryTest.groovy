@@ -1,6 +1,7 @@
 package com.meaningfulplaylists.infrastructure.spotify.services
 
 import com.meaningfulplaylists.domain.models.Action
+import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRedirectUrlFactory
 import spock.lang.Specification
 
 class SpotifyRedirectUrlFactoryTest extends Specification {

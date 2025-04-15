@@ -2,6 +2,7 @@ package com.meaningfulplaylists.infrastructure.spotify.services
 
 import com.meaningfulplaylists.domain.models.Track
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTrack
+import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyMapper
 import com.meaningfulplaylists.utils.TestUtils
 import spock.lang.Specification
 
