@@ -50,8 +50,8 @@ public class RetrofitUtils {
     public static <T> Optional<T> safeExecute(Call<T> call) {
         try {
             Response<T> response = call.execute();
-            if (response.isSuccessful() && response.body() != null) {
-                 return Optional.of(response.body());
+            if (response.isSuccessful()) {
+                 return Optional.ofNullable(response.body());
             }
             log.error("Unsuccessful Retrofit response from call [{}]: code={}, error={}", call.request().url(), response.code(), response.message());
         } catch (IOException e) {
