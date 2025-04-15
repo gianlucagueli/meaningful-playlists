@@ -1,19 +1,19 @@
 package com.meaningfulplaylists.domain.usecases
 
-import com.meaningfulplaylists.domain.repositories.MusicProviderRepository
+import com.meaningfulplaylists.domain.repositories.MusicProvider
 import com.meaningfulplaylists.utils.TestUtils
 import spock.lang.Specification
 
 class CreatePlaylistUseCaseTest extends Specification {
     CreatePlaylistUseCase useCase
-    MusicProviderRepository mockRepository
+    MusicProvider mockRepository
 
     String userId = ""
     String playlistName = ""
     List<String> titleList
 
     void setup() {
-        mockRepository = Mock(MusicProviderRepository)
+        mockRepository = Mock(MusicProvider)
 
         useCase = new CreatePlaylistUseCase(mockRepository)
     }

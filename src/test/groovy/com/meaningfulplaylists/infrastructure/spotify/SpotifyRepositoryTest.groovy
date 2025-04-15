@@ -8,7 +8,7 @@ import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyAddTracksReq
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyCreatePlaylistResponse
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifySearchResponse
 import com.meaningfulplaylists.infrastructure.spotify.services.SpotifyAuthService
-import com.meaningfulplaylists.infrastructure.spotify.services.SpotifyRepository
+import com.meaningfulplaylists.infrastructure.spotify.services.SpotifyMusicService
 import com.meaningfulplaylists.utils.TestUtils
 import okhttp3.Request
 import retrofit2.Call
@@ -24,13 +24,13 @@ class SpotifyRepositoryTest extends Specification {
 
     SpotifyAuthService authService;
 
-    SpotifyRepository repository
+    SpotifyMusicService repository
 
     void setup() {
         spotifyConfig = Mock(SpotifyConfig)
         authService = Mock(SpotifyAuthService)
 
-        repository = new SpotifyRepository(spotifyConfig, authService)
+        repository = new SpotifyMusicService(spotifyConfig, authService)
 
         mockSpotifyApp = Mock(SpotifyApi)
         mockCall = Mock(Call)
