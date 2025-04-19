@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Slf4j
 @Repository
 public class ClientRedisRepository extends AbstractRedisRepository {
@@ -20,8 +22,7 @@ public class ClientRedisRepository extends AbstractRedisRepository {
         super.save(RedisNamespace.CLIENT, CLIENT_KEY, value, CLIENT_TTL);
     }
 
-    public SpotifyTokenResponse find() {
-        return super.find(RedisNamespace.CLIENT, CLIENT_KEY, SpotifyTokenResponse.class)
-                .orElseThrow(() -> new RuntimeException("Could not find client auth token"));
+    public Optional<SpotifyTokenResponse> find() {
+        return super.find(RedisNamespace.CLIENT, CLIENT_KEY, SpotifyTokenResponse.class);
     }
 }

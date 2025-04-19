@@ -1,6 +1,7 @@
 package com.meaningfulplaylists.infrastructure.interceptors;
 
 import com.meaningfulplaylists.infrastructure.redis.repository.ClientRedisRepository;
+import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Interceptor;
@@ -36,7 +37,11 @@ public class SpotifyAuthInterceptor implements Interceptor {
         return chain.proceed(request);
     }
 
+
     private String getAccessToken() {
-        return "Bearer " + clientRepository.find().accessToken();
+        SpotifyTokenResponse clientData = clientRepository.find()
+                .orElseThrow(() -> new RuntimeException("Error getting client authorization"));
+
+        return "Bearer " + clientData.accessToken();
     }
 } 

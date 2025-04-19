@@ -42,7 +42,11 @@ public class SpotifyAuthService implements AuthService {
 
     @PostConstruct
     private void init() {
-        getClientToken();
+        clientRepository.find()
+                .orElseGet(() -> {
+                    getClientToken();
+                    return null;
+                }) ;
     }
 
     @Override
@@ -56,7 +60,6 @@ public class SpotifyAuthService implements AuthService {
     }
 
     @Override
-    // todo: aggiungere meccanismo di controllo scadenza e recupero (catch eccezione e retry?)
     public void handleCallback(String code, String state) {
         SpotifyTokenResponse response = exchangeCodeForToken(code);
         String userId = getCurrentUserId(state, response.accessToken());

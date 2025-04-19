@@ -1,14 +1,18 @@
 package com.meaningfulplaylists.infrastructure.spotify.services
 
 import com.meaningfulplaylists.domain.models.Action
+import com.meaningfulplaylists.infrastructure.redis.repository.ClientRedisRepository
+import com.meaningfulplaylists.infrastructure.redis.repository.UserRedisRepository
 import com.meaningfulplaylists.infrastructure.spotify.SpotifyAccount
 import com.meaningfulplaylists.infrastructure.spotify.SpotifyApi
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig
+import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties
 import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyMissingStateException
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile
 import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRedirectUrlFactory
 import com.meaningfulplaylists.utils.TestUtils
+import org.junit.Test
 import retrofit2.Call
 import retrofit2.Response
 import spock.lang.Specification
@@ -17,26 +21,64 @@ class SpotifyAuthServiceTest extends Specification {
     SpotifyConfig mockConfigs;
     SpotifyAccount mockSpotifyAccount
     SpotifyApi mockSpotifyApi
+    SpotifyProperties fakeProperties
+    ClientRedisRepository mockClientRepository
+    UserRedisRepository mockUserRepository
 
     Call mockCall
     SpotifyRedirectUrlFactory urlFactory;
 
     SpotifyAuthService authService
 
-    String clientId = "client-id"
-    String clientSecret = "client-secret"
-    String redirectUri = "redirect-uri"
-
     void setup() {
         mockConfigs = Mock(SpotifyConfig)
-
+        urlFactory = Mock(SpotifyRedirectUrlFactory)
+        fakeProperties = TestUtils.createSpotifyProperties()
+        mockClientRepository = Mock(ClientRedisRepository)
+        mockUserRepository = Mock(UserRedisRepository)
         mockSpotifyAccount = Mock(SpotifyAccount)
         mockSpotifyApi = Mock(SpotifyApi)
         mockCall = Mock(Call)
 
-        urlFactory = Mock(SpotifyRedirectUrlFactory)
+        authService = new SpotifyAuthService(mockConfigs, fakeProperties, mockClientRepository, mockUserRepository, urlFactory)
+    }
 
-        authService = new SpotifyAuthService(mockConfigs, urlFactory, clientId, clientSecret, redirectUri)
+    def "init - should avoid calling spotify if the token is already stored"() {
+        given:
+        SpotifyTokenResponse token = TestUtils.createSpotifyTokenResponse()
+
+        when:
+        authService.init()
+
+        then:
+        1 * mockClientRepository.find() >> Optional.of(token)
+
+        and:
+        0 * _._
+    }
+
+    def "init - should call spotify to retrieve client data if not present in the repository"() {
+        given:
+        SpotifyTokenResponse fakeResponse = TestUtils.createSpotifyTokenResponse()
+
+        when:
+        authService.init()
+
+        then:
+        1 * mockClientRepository.find() >> Optional.empty()
+        1 * mockConfigs.getSpotifyAccount() >> mockSpotifyAccount
+        1 * mockSpotifyAccount.getAccessToken(
+                authService.SPOTIFY_CLIENT_CREDENTIALS,
+                null,
+                null,
+                fakeProperties.clientId(),
+                fakeProperties.clientSecret()
+        ) >> mockCall
+        1 * mockCall.execute() >> Response.success(fakeResponse)
+        1 * mockClientRepository.save(fakeResponse)
+
+        and:
+        0 * _._
     }
 
     def "CreateRedirectUrl - should generate a redirect URL and map the state to a user session"() {
@@ -50,11 +92,11 @@ class SpotifyAuthServiceTest extends Specification {
 
         then:
         1 * urlFactory.generateRandomState() >> randomState
+        1 * mockUserRepository.saveState(randomState, "")
         1 * urlFactory.generateRedirectUrl(randomState, action) >> generatedUrl
 
         and:
         generatedUrl == result
-        authService.mapStateUserId.containsKey(randomState)
     }
 
     def "HandleCallback -"() {
@@ -64,58 +106,56 @@ class SpotifyAuthServiceTest extends Specification {
         String code = "code-1234-567-890"
         String state = "state-1234"
 
-        authService.mapStateUserId.put(state, null)
-
         when:
         authService.handleCallback(code, state)
 
         then:
         1 * mockConfigs.getSpotifyAccount() >> mockSpotifyAccount
-        1 * mockSpotifyAccount.getAccessToken(_, code, redirectUri, clientId, clientSecret) >> mockCall
+        1 * mockSpotifyAccount.getAccessToken(_,
+                code,
+                fakeProperties.redirectUri(),
+                fakeProperties.clientId(),
+                fakeProperties.clientSecret()
+        ) >> mockCall
         1 * mockCall.execute() >> Response.success(fakeResponse)
         1 * mockConfigs.getSpotifyApi() >> mockSpotifyApi
         1 * mockSpotifyApi.getCurrentUserProfile("Bearer " + fakeResponse.accessToken()) >> mockCall
         1 * mockCall.execute() >> Response.success(fakeUserProfile)
+        1 * mockUserRepository.saveState(state, fakeUserProfile.id())
+        1 * mockUserRepository.saveUser(fakeUserProfile.id(), fakeResponse)
 
         and:
-        authService.mapStateUserId.get(state) == fakeUserProfile.id()
-        authService.users.containsKey(fakeUserProfile.id())
-    }
-
-    def "HandleCallback - should throw an exception if no state is found"() {
-        given:
-        String missingState = "12345-abcd"
-
-        when:
-        authService.handleCallback(_ as String, missingState)
-
-        then:
-        thrown(SpotifyMissingStateException)
+        0 * _._
     }
 
     def "getUserIdFromState - should return the userId associated the given state"() {
         given:
         String state = "state-user-id"
         String userId = "user-id"
-        authService.mapStateUserId.put(state, userId)
 
         when:
         String result = authService.getUserIdFromState(state)
 
         then:
+        1 * mockUserRepository.findUserIdByState(state) >> userId
+
+        and:
         result == userId
+        0 * _._
     }
 
     def "getUserAuthorization - should return the Authorization header for the given userId"() {
         given:
         SpotifyTokenResponse fakeResponse = TestUtils.createSpotifyTokenResponse()
         String userId = "user-id"
-        authService.users.put(userId, fakeResponse)
 
         when:
         String result = authService.getUserAuthorization(userId)
 
         then:
+        1 * mockUserRepository.findTokenByUserId(userId) >> fakeResponse
+
+        and:
         result == "Bearer ${fakeResponse.accessToken()}"
     }
 }
