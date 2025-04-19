@@ -2,6 +2,7 @@ package com.meaningfulplaylists.utils
 
 import com.meaningfulplaylists.domain.models.Playlist
 import com.meaningfulplaylists.domain.models.Track
+import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyAddTracksRequest
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyCreatePlaylistResponse
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifySearchResponse
@@ -11,6 +12,18 @@ import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTracks
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile
 
 class TestUtils {
+    // CONFIGS
+    static SpotifyProperties createSpotifyProperties() {
+        return new SpotifyProperties(
+                "client-id",
+                "client-secret",
+                "redirect-uri",
+                "http://api-base-url.com/",
+                "http://account-base-url.com/"
+        )
+    }
+
+    // DOMAIN
     static Track createTrack(String track = "track") {
         return new Track("${track}-id",
                 "${track}-name",
@@ -31,6 +44,8 @@ class TestUtils {
                 tracks
         )
     }
+
+    // SPOTIFY
 
     static SpotifyTrack createSpotifyTrack(String track = "spotify-track") {
         return new SpotifyTrack(

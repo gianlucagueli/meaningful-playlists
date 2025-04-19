@@ -31,7 +31,7 @@ public class SpotifyMusicService implements MusicProvider {
     @Override
     public Track findByTitle(String title) {
         return tracksRepository.findByName(title)
-                .orElse(retrieveTrackFromSpotify(title));
+                .orElseGet(() -> retrieveTrackFromSpotify(title));
     }
 
     private Track retrieveTrackFromSpotify(String title) {
@@ -39,7 +39,7 @@ public class SpotifyMusicService implements MusicProvider {
         Call<SpotifySearchResponse> call = spotifyConfig.getSpotifyApi()
                 .searchTracks(
                         title,
-                        SpotifySearchType.TRACK.name(),
+                        SpotifySearchType.TRACK.getType(),
                         SEARCH_LIMIT
                 );
 

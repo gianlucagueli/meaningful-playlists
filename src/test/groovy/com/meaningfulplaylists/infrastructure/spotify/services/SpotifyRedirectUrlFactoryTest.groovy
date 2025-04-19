@@ -1,19 +1,20 @@
 package com.meaningfulplaylists.infrastructure.spotify.services
 
 import com.meaningfulplaylists.domain.models.Action
+import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties
 import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRedirectUrlFactory
+import com.meaningfulplaylists.utils.TestUtils
+import org.apache.logging.log4j.util.Strings
 import spock.lang.Specification
 
 class SpotifyRedirectUrlFactoryTest extends Specification {
     SpotifyRedirectUrlFactory factory
-
-    String baseUrl = "https://base-url.com/"
-    String clientId = 1234567890
-    String redirectUrl = "https://meaningful-playlist.com/callback"
-    String responseType = "code"
+    SpotifyProperties fakeProperties
 
     void setup() {
-        factory = new SpotifyRedirectUrlFactory(baseUrl, clientId, redirectUrl, responseType)
+        fakeProperties = TestUtils.createSpotifyProperties()
+
+        factory = new SpotifyRedirectUrlFactory(fakeProperties)
     }
 
     def "GenerateRandomState - should generate a string with length 10"() {
@@ -39,7 +40,11 @@ class SpotifyRedirectUrlFactoryTest extends Specification {
     def "GenerateRedirectUrl - should return the redirect url given a valid state and action to perform"() {
         given:
         String state = "state-1234"
-        String defaultUrl = "${baseUrl}authorize?response_type=${responseType}&client_id=${clientId}&redirect_uri=${redirectUrl}&state=${state}"
+        String defaultUrl = "${fakeProperties.accountBaseUrl()}authorize?" +
+                "response_type=${SpotifyRedirectUrlFactory.RESPONSE_TYPE}" +
+                "&client_id=${fakeProperties.clientId()}" +
+                "&redirect_uri=${fakeProperties.redirectUri()}" +
+                "&state=${state}"
 
         when:
         String result = factory.generateRedirectUrl(state, action)
@@ -50,6 +55,6 @@ class SpotifyRedirectUrlFactoryTest extends Specification {
         where:
         action                  | expectedEnding
         Action.CREATE_PLAYLIST  | "&scope=playlist-modify-public playlist-modify-private user-read-private user-read-email"
-        null                    | ""
+        null                    | Strings.EMPTY
     }
 }

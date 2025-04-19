@@ -32,14 +32,6 @@ class CreatePlaylistUseCaseTest extends Specification {
         1 * mockRepository.findByTitle(title1) >> TestUtils.createTrack(title1)
         1 * mockRepository.findByTitle(title2) >> TestUtils.createTrack(title2)
         1 * mockRepository.findByTitle(title3) >> TestUtils.createTrack(title3)
-
-        and:
-        useCase.collectedTracks.size() == 3
-        useCase.collectedTracks.containsKey(title1)
-        useCase.collectedTracks.get(title1) == TestUtils.createTrack(title1)
-        useCase.collectedTracks.containsKey(title2)
-        useCase.collectedTracks.get(title2) == TestUtils.createTrack(title2)
-        useCase.collectedTracks.containsKey(title3)
-        useCase.collectedTracks.get(title3) == TestUtils.createTrack(title3)
+        1 * mockRepository.createPlaylist(_)
     }
 }

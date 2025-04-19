@@ -2,11 +2,13 @@ package com.meaningfulplaylists.infrastructure.spotify
 
 import com.meaningfulplaylists.domain.models.Playlist
 import com.meaningfulplaylists.domain.models.Track
+import com.meaningfulplaylists.infrastructure.redis.repository.TracksRedisRepository
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig
 import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyTrackNotFoundException
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyAddTracksRequest
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyCreatePlaylistResponse
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifySearchResponse
+import com.meaningfulplaylists.infrastructure.spotify.models.SpotifySearchType
 import com.meaningfulplaylists.infrastructure.spotify.services.SpotifyAuthService
 import com.meaningfulplaylists.infrastructure.spotify.services.SpotifyMusicService
 import com.meaningfulplaylists.utils.TestUtils
@@ -17,27 +19,46 @@ import spock.lang.Specification
 
 class SpotifyRepositoryTest extends Specification {
     SpotifyConfig spotifyConfig;
-    SpotifyApi mockSpotifyApp
+    SpotifyAuthService authService;
+    TracksRedisRepository mockTrackRepository
 
+    SpotifyApi mockSpotifyApi
     Call mockCall
     Request mockRequest
-
-    SpotifyAuthService authService;
 
     SpotifyMusicService repository
 
     void setup() {
         spotifyConfig = Mock(SpotifyConfig)
         authService = Mock(SpotifyAuthService)
+        mockTrackRepository = Mock(TracksRedisRepository)
 
-        repository = new SpotifyMusicService(spotifyConfig, authService)
+        repository = new SpotifyMusicService(spotifyConfig, authService, mockTrackRepository)
 
-        mockSpotifyApp = Mock(SpotifyApi)
+        mockSpotifyApi = Mock(SpotifyApi)
         mockCall = Mock(Call)
         mockRequest = GroovyMock(Request)
     }
 
-    def "FindByTitle - should return the Track found"() {
+    def "FindByTitle - should avoid to call spotify if the track is already stored"() {
+        given:
+        String title = "track-title"
+        Track fakeTrack = TestUtils.createTrack(title)
+
+        when:
+        Track result = repository.findByTitle(title)
+
+        then:
+        1 * mockTrackRepository.findByName(title) >> Optional.of(fakeTrack)
+        0 * _._
+
+        and:
+        result.id() == fakeTrack.id()
+        result.name() == fakeTrack.name()
+        result.uri() == fakeTrack.uri()
+    }
+
+    def "FindByTitle - should search the repository and call spotify if nothing is found"() {
         given:
         SpotifySearchResponse fakeResponse = TestUtils.createSpotifySearchResponse()
         String title = "track-title"
@@ -46,14 +67,17 @@ class SpotifyRepositoryTest extends Specification {
         Track result = repository.findByTitle(title)
 
         then:
-        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApp
-        1 * mockSpotifyApp.searchTracks(title, "track", 1) >> mockCall
+        1 * mockTrackRepository.findByName(title) >> Optional.empty()
+        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApi
+        1 * mockSpotifyApi.searchTracks(title, SpotifySearchType.TRACK.getType(), 10) >> mockCall
         1 * mockCall.execute() >> Response.success(fakeResponse)
 
+        and:
         result.id() == fakeResponse.tracks().items().get(0).id()
         result.name() == fakeResponse.tracks().items().get(0).name()
         result.uri() == fakeResponse.tracks().items().get(0).uri()
     }
+
 
     def "FindByTitle - should throw SpotifyTrackNotFoundException if no track is found"() {
         given:
@@ -64,10 +88,10 @@ class SpotifyRepositoryTest extends Specification {
         Track result = repository.findByTitle(title)
 
         then:
-        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApp
-        1 * mockSpotifyApp.searchTracks(title, "track", 1) >> mockCall
+        1 * mockTrackRepository.findByName(title) >> Optional.empty()
+        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApi
+        1 * mockSpotifyApi.searchTracks(title, SpotifySearchType.TRACK.getType(), 10) >> mockCall
         1 * mockCall.execute() >> Response.success(fakeResponse)
-        1 * mockCall.request() >> mockRequest
 
         and:
         thrown(SpotifyTrackNotFoundException)
@@ -87,11 +111,11 @@ class SpotifyRepositoryTest extends Specification {
         then:
         1 * authService.getUserIdFromState(playlist.stateAssociated()) >> fakeUserId
         1 * authService.getUserAuthorization(fakeUserId) >> fakeAuthToken
-        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApp
-        1 * mockSpotifyApp.createPlaylist(fakeAuthToken, fakeUserId, _) >> mockCall
+        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApi
+        1 * mockSpotifyApi.createPlaylist(fakeAuthToken, fakeUserId, _) >> mockCall
         1 * mockCall.execute() >> Response.success(playlistResponse)
-        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApp
-        1 * mockSpotifyApp.addTracksToPlaylist(fakeAuthToken, playlistResponse.id(), request) >> mockCall
+        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApi
+        1 * mockSpotifyApi.addTracksToPlaylist(fakeAuthToken, playlistResponse.id(), request) >> mockCall
         1 * mockCall.execute() >> Response.success(Void)
     }
 
@@ -111,12 +135,11 @@ class SpotifyRepositoryTest extends Specification {
         then:
         1 * authService.getUserIdFromState(playlist.stateAssociated()) >> fakeUserId
         1 * authService.getUserAuthorization(fakeUserId) >> fakeAuthToken
-        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApp
-        1 * mockSpotifyApp.createPlaylist(fakeAuthToken, fakeUserId, _) >> mockCall
+        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApi
+        1 * mockSpotifyApi.createPlaylist(fakeAuthToken, fakeUserId, _) >> mockCall
         1 * mockCall.execute() >> Response.success(badResponse)
-        1 * mockCall.request() >> mockRequest
         0 * spotifyConfig.getSpotifyApi()
-        0 * mockSpotifyApp.addTracksToPlaylist(_, _, _)
+        0 * mockSpotifyApi.addTracksToPlaylist(_, _, _)
         0 * mockCall.execute()
 
         and:
@@ -139,15 +162,15 @@ class SpotifyRepositoryTest extends Specification {
         then:
         1 * authService.getUserIdFromState(playlist.stateAssociated()) >> fakeUserId
         1 * authService.getUserAuthorization(fakeUserId) >> fakeAuthToken
-        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApp
-        1 * mockSpotifyApp.createPlaylist(fakeAuthToken, fakeUserId, _) >> mockCall
+        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApi
+        1 * mockSpotifyApi.createPlaylist(fakeAuthToken, fakeUserId, _) >> mockCall
         1 * mockCall.execute() >> Response.success(playlistResponse)
-        0 * spotifyConfig.getSpotifyApi() >> mockSpotifyApp
-        0 * mockSpotifyApp.addTracksToPlaylist(_, _, _) >> mockCall
+        0 * spotifyConfig.getSpotifyApi() >> mockSpotifyApi
+        0 * mockSpotifyApi.addTracksToPlaylist(_, _, _) >> mockCall
         0 * mockCall.execute() >> Response.success(Void)
     }
 
-    def "CreatePlaylist - should correctly calls Spotify to create the playlist and then add the tracks"() {
+    def "CreatePlaylist - should throw RuntimeExeption if it fails to add the tracks to the playlist just created"() {
         given:
         Playlist playlist = TestUtils.createPlaylist(5)
         SpotifyCreatePlaylistResponse playlistResponse = TestUtils.createSpotifyCreatePlaylistResponse()
@@ -162,13 +185,12 @@ class SpotifyRepositoryTest extends Specification {
         then:
         1 * authService.getUserIdFromState(playlist.stateAssociated()) >> fakeUserId
         1 * authService.getUserAuthorization(fakeUserId) >> fakeAuthToken
-        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApp
-        1 * mockSpotifyApp.createPlaylist(fakeAuthToken, fakeUserId, _) >> mockCall
+        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApi
+        1 * mockSpotifyApi.createPlaylist(fakeAuthToken, fakeUserId, _) >> mockCall
         1 * mockCall.execute() >> Response.success(playlistResponse)
-        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApp
-        1 * mockSpotifyApp.addTracksToPlaylist(fakeAuthToken, playlistResponse.id(), request) >> mockCall
+        1 * spotifyConfig.getSpotifyApi() >> mockSpotifyApi
+        1 * mockSpotifyApi.addTracksToPlaylist(fakeAuthToken, playlistResponse.id(), request) >> mockCall
         1 * mockCall.execute() >> Response.success(badResponse)
-        1 * mockCall.request() >> mockRequest
 
         and:
         thrown(RuntimeException)
