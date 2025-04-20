@@ -7,7 +7,7 @@ import retrofit2.http.*;
 public interface SpotifyApi {
 
     @GET("v1/search")
-    Call<SpotifySearchResponse> searchTracks(
+    Call<SpotifySearchResponse> search(
         @Query("q") String query,
         @Query("type") String type,
         @Query("limit") int limit

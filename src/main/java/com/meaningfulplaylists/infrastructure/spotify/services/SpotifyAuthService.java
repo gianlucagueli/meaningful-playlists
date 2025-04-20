@@ -83,7 +83,7 @@ public class SpotifyAuthService implements AuthService {
         Call<SpotifyTokenResponse> call = configs.getSpotifyAccount().getAccessToken(
                 SPOTIFY_AUTH_CREDENTIALS,
                 code,
-                properties.redirectUri(),
+                properties.clientRedirectUri(),
                 properties.clientId(),
                 properties.clientSecret()
         );

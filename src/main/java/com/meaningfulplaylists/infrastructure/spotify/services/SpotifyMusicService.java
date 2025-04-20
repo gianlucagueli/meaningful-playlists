@@ -5,6 +5,7 @@ import com.meaningfulplaylists.domain.models.Track;
 import com.meaningfulplaylists.domain.repositories.MusicProvider;
 import com.meaningfulplaylists.infrastructure.redis.repository.TracksRedisRepository;
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig;
+import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties;
 import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyTrackNotFoundException;
 import com.meaningfulplaylists.infrastructure.spotify.models.*;
 import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
@@ -12,23 +13,28 @@ import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyMapper;
 import com.meaningfulplaylists.infrastructure.utils.StringUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Component;
 import retrofit2.Call;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Slf4j
 @Component
 public class SpotifyMusicService implements MusicProvider {
-    SpotifyConfig spotifyConfig;
-    SpotifyAuthService authService;
-    TracksRedisRepository tracksRepository;
+    private final SpotifyConfig spotifyConfig;
+    private final SpotifyProperties spotifyProperties;
+    private final SpotifyAuthService authService;
+    private final TracksRedisRepository tracksRepository;
 
     SpotifyMusicService(SpotifyConfig spotifyConfig,
+                        SpotifyProperties properties,
                         SpotifyAuthService authService,
                         TracksRedisRepository tracksRepository) {
         this.spotifyConfig = spotifyConfig;
+        this.spotifyProperties = properties;
         this.authService = authService;
         this.tracksRepository = tracksRepository;
     }
@@ -39,44 +45,28 @@ public class SpotifyMusicService implements MusicProvider {
     }
 
     @Override
-    public Track findByTitle(String title) {
-        return tracksRepository.findByName(title)
-                .orElseGet(() -> retrieveTrackFromSpotify(title));
-    }
+    public List<Track> findTracks(List<String> keywords) {
+        if (keywords == null || keywords.isEmpty()) {
+            return List.of();
+        }
 
-    private Track retrieveTrackFromSpotify(String title) {
-        int SEARCH_LIMIT = 50;
-        Call<SpotifySearchResponse> call = spotifyConfig.getSpotifyApi()
-                .searchTracks(
-                        title,
-                        SpotifySearchType.TRACK.getType(),
-                        SEARCH_LIMIT
-                );
+        List<Track> result = new ArrayList<>();
+        int currentIndex = 0;
 
-        return RetrofitUtils.safeExecute(call)
-                .map(SpotifySearchResponse::tracks)
-                .map(SpotifyTracks::items)
-                .map(tracks -> {
-                    saveAllTracks(tracks);
-                    return tracks;
-                })
-                .flatMap(tracks -> findMatchingTrack(title, tracks))
-                .map(SpotifyMapper::mapToDomain)
-                .orElseThrow(() -> new SpotifyTrackNotFoundException(title));
-    }
+        while (currentIndex < keywords.size()) {
+            Pair<Integer, Track> bestMatch = findLongestMatchingSequence(keywords, currentIndex);
 
-    private void saveAllTracks(List<SpotifyTrack> tracks) {
-        tracks.stream()
-                .filter(track -> track.name() != null)
-                .map(SpotifyMapper::mapToDomain)
-                .forEach(tracksRepository::save);
-    }
+            if (bestMatch == null) {
+                log.warn("No matching tracks found for {}", keywords.get(currentIndex));
+                currentIndex++;
+                continue;
+            }
 
-    private Optional<SpotifyTrack> findMatchingTrack(String title, List<SpotifyTrack> tracks) {
-        return tracks.stream()
-                .filter(track -> track.name() != null)
-                .filter(track -> StringUtils.equals(title, track.name()))
-                .findFirst();
+            result.add(bestMatch.getSecond());
+            currentIndex += bestMatch.getFirst();
+        }
+
+        return result;
     }
 
     @Override
@@ -93,6 +83,66 @@ public class SpotifyMusicService implements MusicProvider {
         log.info("Playlist [{}:{}] created successfully", playlistResponse.id(), playlist.name());
     }
 
+
+    private Pair<Integer, Track> findLongestMatchingSequence(List<String> keywords, int startIndex) {
+        int maxLength = Math.min(keywords.size() - startIndex, 5);
+
+        for (int length = maxLength; length > 0; length--) {
+            if (startIndex + length > keywords.size()) {
+                continue;
+            }
+
+            List<String> sequence = keywords.subList(startIndex, startIndex + length);
+            String combinedTitle = StringUtils.combine(sequence);
+
+            try {
+                Track track = findByTitle(combinedTitle);
+                return Pair.of(length, track);
+            } catch (SpotifyTrackNotFoundException ignored) {
+                log.debug("No matching tracks found for {}", combinedTitle);
+            }
+        }
+
+        return null;
+    }
+
+    private Track findByTitle(String title) {
+        log.info("Finding track by title: {}", title);
+
+        Track result = tracksRepository.findByName(title)
+                .orElseGet(() -> getTrackFromSpotify(title));
+
+        log.info("Found track: {}", result);
+        return result;
+    }
+
+    private Track getTrackFromSpotify(String title) {
+        int SEARCH_LIMIT = 10;
+        Call<SpotifySearchResponse> call = spotifyConfig.getSpotifyApi()
+                .search(
+                        title,
+                        SpotifySearchType.TRACK.getType(),
+                        SEARCH_LIMIT
+                );
+
+        return RetrofitUtils.safeExecute(call)
+                .map(SpotifySearchResponse::tracks)
+                .map(SpotifyTracks::items)
+                .flatMap(tracks -> findMatchingTrack(title, tracks))
+                .map(SpotifyMapper::mapToDomain)
+                .map(track -> {
+                    tracksRepository.save(track);
+                    return track;
+                })
+                .orElseThrow(() -> new SpotifyTrackNotFoundException(title));
+    }
+
+    private Optional<SpotifyTrack> findMatchingTrack(String title, List<SpotifyTrack> tracks) {
+        return tracks.stream()
+                .filter(track -> track.name() != null)
+                .filter(track -> StringUtils.equals(title, track.name()))
+                .findFirst();
+    }
 
     private SpotifyCreatePlaylistResponse createPlaylist(String authToken, String userId, Playlist playlist) {
         SpotifyCreatePlaylistRequest request = new SpotifyCreatePlaylistRequest(
@@ -120,21 +170,30 @@ public class SpotifyMusicService implements MusicProvider {
     }
 
     private void loadUtilityTracks() {
-        this.tracksRepository.save(getTrack("1A05ibu1DXGIt0F62NG7xU"));
-        this.tracksRepository.save(getTrack("1TwN15RFItXAF4b32d8TVU"));
-        this.tracksRepository.save(getTrack("6akffeWlG2JB4u8AOJ4WRo"));
-        this.tracksRepository.save(getTrack("5e5hRYVA6SatSjvDiq9WXs"));
-        this.tracksRepository.save(getTrack("4n08SrZuPK09cHsVfvEcHc"));
-        this.tracksRepository.save(getTrack("6P0ob6VV2SzHanRB9Ai7eA"));
-        this.tracksRepository.save(getTrack("02Rkdlw2ku7bYCOKF8qAVR"));
+        spotifyProperties.utilityTracks().forEach(this::loadUtilityTrack);
     }
 
-    private Track getTrack(String trackId) {
+    private void loadUtilityTrack(String id, String title) {
+        try {
+            tracksRepository.findByName(title)
+                    .orElseGet(() -> {
+                        Track track = findById(id);
+                        tracksRepository.save(track);
+                        return track;
+                    });
+
+            log.info("Found utility track {}", title);
+        } catch (SpotifyTrackNotFoundException ignored) {
+            log.error("Failed to load utility track {}", title);
+        }
+    }
+
+    private Track findById(String trackId) {
+        log.info("Finding track by id {}", trackId);
         Call<SpotifyTrack> call = spotifyConfig.getSpotifyApi().getTrack(trackId);
 
         return RetrofitUtils.safeExecute(call)
                 .map(SpotifyMapper::mapToDomain)
                 .orElseThrow(() -> new SpotifyTrackNotFoundException(trackId));
     }
-
 }

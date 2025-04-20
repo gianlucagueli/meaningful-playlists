@@ -1,13 +1,15 @@
 package com.meaningfulplaylists.infrastructure.spotify.configs;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
+import java.util.Map;
+
+@ConfigurationProperties("spotify")
 public record SpotifyProperties(
-        @Value("${spotify.client.id}") String clientId,
-        @Value("${spotify.client.secret}") String clientSecret,
-        @Value("${spotify.client.redirectUri}") String redirectUri,
-        @Value("${spotify.api.baseUrl}") String apiBaseUrl,
-        @Value("${spotify.account.baseUrl}") String accountBaseUrl
+        String clientId,
+        String clientSecret,
+        String clientRedirectUri,
+        String apiBaseUrl,
+        String accountBaseUrl,
+        Map<String, String> utilityTracks
 ) {}

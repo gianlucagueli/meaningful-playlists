@@ -1,8 +1,7 @@
-package com.meaningfulplaylists.infrastructure.spotify.services
+package com.meaningfulplaylists.infrastructure.spotify.utils
 
 import com.meaningfulplaylists.domain.models.Action
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties
-import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRedirectUrlFactory
 import com.meaningfulplaylists.utils.TestUtils
 import org.apache.logging.log4j.util.Strings
 import spock.lang.Specification
@@ -43,7 +42,7 @@ class SpotifyRedirectUrlFactoryTest extends Specification {
         String defaultUrl = "${fakeProperties.accountBaseUrl()}authorize?" +
                 "response_type=${SpotifyRedirectUrlFactory.RESPONSE_TYPE}" +
                 "&client_id=${fakeProperties.clientId()}" +
-                "&redirect_uri=${fakeProperties.redirectUri()}" +
+                "&redirect_uri=${fakeProperties.clientRedirectUri()}" +
                 "&state=${state}"
 
         when:

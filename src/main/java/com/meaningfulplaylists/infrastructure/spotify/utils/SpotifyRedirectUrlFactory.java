@@ -36,7 +36,7 @@ public class SpotifyRedirectUrlFactory {
         return properties.accountBaseUrl() +
                 "authorize?response_type=" + RESPONSE_TYPE +
                 "&client_id=" + properties.clientId() +
-                "&redirect_uri=" + properties.redirectUri() +
+                "&redirect_uri=" + properties.clientRedirectUri() +
                 "&state=" + state +
                 buildScope(action);
     }

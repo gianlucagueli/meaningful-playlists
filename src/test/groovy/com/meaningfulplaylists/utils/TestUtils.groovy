@@ -13,13 +13,14 @@ import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile
 
 class TestUtils {
     // CONFIGS
-    static SpotifyProperties createSpotifyProperties() {
+    static SpotifyProperties createSpotifyProperties(Map<String, String> utilityTracks = Collections.EMPTY_MAP) {
         return new SpotifyProperties(
                 "client-id",
                 "client-secret",
                 "redirect-uri",
                 "http://api-base-url.com/",
-                "http://account-base-url.com/"
+                "http://account-base-url.com/",
+                utilityTracks
         )
     }
 
