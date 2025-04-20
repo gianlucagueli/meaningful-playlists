@@ -22,7 +22,7 @@ public abstract class AbstractRedisRepository {
     }
 
     protected void save(RedisNamespace namespace, String id, Object value, Long ttl) {
-        log.info("Saving {} with key: {}, value: {} and ttl: {}", namespace, id, value, ttl);
+        log.debug("Saving {} with key: {}, value: {} and ttl: {}", namespace, id, value, ttl);
         String key = namespace.key(id);
 
         if (ttl != null && ttl > 0) {

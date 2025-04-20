@@ -7,12 +7,10 @@ import com.meaningfulplaylists.infrastructure.spotify.SpotifyAccount
 import com.meaningfulplaylists.infrastructure.spotify.SpotifyApi
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties
-import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyMissingStateException
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile
 import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRedirectUrlFactory
 import com.meaningfulplaylists.utils.TestUtils
-import org.junit.Test
 import retrofit2.Call
 import retrofit2.Response
 import spock.lang.Specification
@@ -113,7 +111,7 @@ class SpotifyAuthServiceTest extends Specification {
         1 * mockConfigs.getSpotifyAccount() >> mockSpotifyAccount
         1 * mockSpotifyAccount.getAccessToken(_,
                 code,
-                fakeProperties.redirectUri(),
+                fakeProperties.clientRedirectUri(),
                 fakeProperties.clientId(),
                 fakeProperties.clientSecret()
         ) >> mockCall

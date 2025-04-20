@@ -19,28 +19,12 @@ public class CreatePlaylistUseCase {
     }
 
     public Playlist createPlaylist(String stateAssociated, String playlistName, List<String> titleList) {
-        List<Track> trackList = findTracksByTitle(titleList);
+        List<Track> trackList = musicProvider.findTracks(titleList);
 
         Playlist playlist = new Playlist(playlistName, DEFAULT_DESCRIPTION, stateAssociated, true, trackList);
 
         musicProvider.createPlaylist(playlist);
 
         return playlist;
-    }
-
-    private List<Track> findTracksByTitle(List<String> titleList) {
-        return Optional.ofNullable(titleList)
-                .filter(list -> !list.isEmpty())
-                .stream()
-                .flatMap(List::stream)
-                .map(this::findTrackByTitle)
-                .toList();
-    }
-
-    private Track findTrackByTitle(String title) {
-        Track track = musicProvider.findByTitle(title);
-        log.info("Found track: {}", track);
-
-        return track;
     }
 }

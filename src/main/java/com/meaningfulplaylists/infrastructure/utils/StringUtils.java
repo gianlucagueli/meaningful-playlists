@@ -41,6 +41,21 @@ public class StringUtils {
         return strippedStr1.equalsIgnoreCase(strippedStr2);
     }
 
+    public static String combine(List<String> tokens) {
+        if (tokens == null || tokens.isEmpty()) {
+            return "";
+        }
+
+        String joined = String.join(" ", tokens);
+
+        return joined.replaceAll(" ,", ",")
+                .replaceAll(" \\.", ".")
+                .replaceAll(" !", "!")
+                .replaceAll(" \\?", "?")
+                .replaceAll(" ;", ";")
+                .replaceAll(" :", ":");
+    }
+
     private static String normalize(String input) {
         return Normalizer.normalize(input, Normalizer.Form.NFD)
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
