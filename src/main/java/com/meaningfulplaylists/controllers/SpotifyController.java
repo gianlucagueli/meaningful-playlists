@@ -4,6 +4,7 @@ import com.meaningfulplaylists.domain.models.Action;
 import com.meaningfulplaylists.domain.usecases.CallbackUseCase;
 import com.meaningfulplaylists.domain.usecases.CreatePlaylistUseCase;
 import com.meaningfulplaylists.domain.usecases.RedirectUseCase;
+import com.meaningfulplaylists.infrastructure.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -52,7 +53,8 @@ public class SpotifyController {
             @RequestParam String playlistName,
             @RequestParam String keywords) {
 
-        List<String> keywordList = List.of(keywords.split(","));
+        List<String> keywordList = StringUtils.tokenize(keywords);
+        log.info("Creating playlist {} with keywords {}", playlistName, keywordList);
 
         return createPlaylistUseCase.createPlaylist(state, playlistName, keywordList).toString();
     }
