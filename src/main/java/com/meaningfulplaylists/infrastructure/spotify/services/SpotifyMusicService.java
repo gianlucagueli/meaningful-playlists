@@ -9,9 +9,13 @@ import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyTrackNot
 import com.meaningfulplaylists.infrastructure.spotify.models.*;
 import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
 import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import retrofit2.Call;
+
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -35,7 +39,7 @@ public class SpotifyMusicService implements MusicProvider {
     }
 
     private Track retrieveTrackFromSpotify(String title) {
-        int SEARCH_LIMIT = 10;
+        int SEARCH_LIMIT = 20;
         Call<SpotifySearchResponse> call = spotifyConfig.getSpotifyApi()
                 .searchTracks(
                         title,
@@ -43,15 +47,30 @@ public class SpotifyMusicService implements MusicProvider {
                         SEARCH_LIMIT
                 );
 
-        Track track = RetrofitUtils.safeExecute(call)
+        return RetrofitUtils.safeExecute(call)
                 .map(SpotifySearchResponse::tracks)
                 .map(SpotifyTracks::items)
-                .flatMap(items -> items.stream().findFirst())
+                .map(tracks -> {
+                    saveAllTracks(tracks);
+                    return tracks;
+                })
+                .flatMap(tracks -> findMatchingTrack(title, tracks))
                 .map(SpotifyMapper::mapToDomain)
                 .orElseThrow(() -> new SpotifyTrackNotFoundException(title));
+    }
 
-        tracksRepository.save(track);
-        return track;
+    private void saveAllTracks(List<SpotifyTrack> tracks) {
+        tracks.stream()
+                .filter(track -> track.name() != null)
+                .map(SpotifyMapper::mapToDomain)
+                .forEach(tracksRepository::save);
+    }
+
+    private Optional<SpotifyTrack> findMatchingTrack(String title, List<SpotifyTrack> tracks) {
+        return tracks.stream()
+                .filter(track -> track.name() != null)
+                .filter(track -> track.name().equalsIgnoreCase(title))
+                .findFirst();
     }
 
     @Override
