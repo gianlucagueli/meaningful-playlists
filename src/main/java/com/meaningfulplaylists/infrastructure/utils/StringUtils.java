@@ -1,5 +1,6 @@
 package com.meaningfulplaylists.infrastructure.utils;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -27,5 +28,21 @@ public class StringUtils {
         }
 
         return tokens;
+    }
+
+    public static boolean equals(String s1, String s2) {
+        if (s1 == null || s2 == null) {
+            return false;
+        }
+
+        String strippedStr1 = normalize(s1);
+        String strippedStr2 = normalize(s2);
+
+        return strippedStr1.equalsIgnoreCase(strippedStr2);
+    }
+
+    private static String normalize(String input) {
+        return Normalizer.normalize(input, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
     }
 }

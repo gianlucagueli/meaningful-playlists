@@ -9,6 +9,7 @@ import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyTrackNot
 import com.meaningfulplaylists.infrastructure.spotify.models.*;
 import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
 import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyMapper;
+import com.meaningfulplaylists.infrastructure.utils.StringUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,11 @@ public class SpotifyMusicService implements MusicProvider {
         this.tracksRepository = tracksRepository;
     }
 
+    @PostConstruct
+    private void init() {
+        loadUtilityTracks();
+    }
+
     @Override
     public Track findByTitle(String title) {
         return tracksRepository.findByName(title)
@@ -39,7 +45,7 @@ public class SpotifyMusicService implements MusicProvider {
     }
 
     private Track retrieveTrackFromSpotify(String title) {
-        int SEARCH_LIMIT = 20;
+        int SEARCH_LIMIT = 50;
         Call<SpotifySearchResponse> call = spotifyConfig.getSpotifyApi()
                 .searchTracks(
                         title,
@@ -69,7 +75,7 @@ public class SpotifyMusicService implements MusicProvider {
     private Optional<SpotifyTrack> findMatchingTrack(String title, List<SpotifyTrack> tracks) {
         return tracks.stream()
                 .filter(track -> track.name() != null)
-                .filter(track -> track.name().equalsIgnoreCase(title))
+                .filter(track -> StringUtils.equals(title, track.name()))
                 .findFirst();
     }
 
@@ -112,4 +118,23 @@ public class SpotifyMusicService implements MusicProvider {
         RetrofitUtils.safeExecute(addTracksCall)
                 .orElseThrow(() -> new RuntimeException("Failed to add tracks to playlist"));
     }
+
+    private void loadUtilityTracks() {
+        this.tracksRepository.save(getTrack("1A05ibu1DXGIt0F62NG7xU"));
+        this.tracksRepository.save(getTrack("1TwN15RFItXAF4b32d8TVU"));
+        this.tracksRepository.save(getTrack("6akffeWlG2JB4u8AOJ4WRo"));
+        this.tracksRepository.save(getTrack("5e5hRYVA6SatSjvDiq9WXs"));
+        this.tracksRepository.save(getTrack("4n08SrZuPK09cHsVfvEcHc"));
+        this.tracksRepository.save(getTrack("6P0ob6VV2SzHanRB9Ai7eA"));
+        this.tracksRepository.save(getTrack("02Rkdlw2ku7bYCOKF8qAVR"));
+    }
+
+    private Track getTrack(String trackId) {
+        Call<SpotifyTrack> call = spotifyConfig.getSpotifyApi().getTrack(trackId);
+
+        return RetrofitUtils.safeExecute(call)
+                .map(SpotifyMapper::mapToDomain)
+                .orElseThrow(() -> new SpotifyTrackNotFoundException(trackId));
+    }
+
 }
