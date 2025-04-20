@@ -3,20 +3,25 @@ package com.meaningfulplaylists.infrastructure.utils
 import spock.lang.Specification
 
 class StringUtilsTest extends Specification {
-    def "RemovePunct - should remove from the input string the external punctuation"() {
+    def "tokenize - should correctly split strings into tokens"() {
         when:
-        String output = StringUtils.removePunct(input)
+        List<String> result = StringUtils.tokenize(input)
 
         then:
-        Objects.equals(output, expected)
+        Objects.equals(result, expected)
 
         where:
-        input               | expected
-        "test-1,"           | "test-1"
-        ",test-2"           | "test-2"
-        ".test-3,"          | "test-3"
-        "test-4,:;!"        | "test-4"
-        "\'test-5-"         | "test-5"
-        "_test.abcd.123-"   | "test.abcd.123"
+        input                       | expected
+        "test,1"                    | List.of("test", ",", "1")
+        "Ciao, come stai?"          | List.of("Ciao", ",", "come", "stai", "?")
+        "Hello! How are you?"       | List.of("Hello", "!", "How", "are", "you", "?")
+        "a b c"                     | List.of("a", "b", "c")
+        "123,456;789"               | List.of("123", ",", "456", ";", "789")
+        "..."                       | List.of(".", ".", ".")
+        "word1 word2,word3.word4!"  | List.of("word1", "word2", ",", "word3", ".", "word4", "!")
+        ""                          | List.of()
+        "   "                       | List.of()
+        "Hello,world!"              | List.of("Hello", ",", "world", "!")
+        "Hips don't lie"            | List.of("Hips", "don't", "lie")
     }
 }
