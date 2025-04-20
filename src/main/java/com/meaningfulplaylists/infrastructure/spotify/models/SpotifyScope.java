@@ -34,9 +34,4 @@ public enum SpotifyScope {
     SpotifyScope(String scope) {
         this.scope = scope;
     }
-
-    @Override
-    public String toString() {
-        return scope;
-    }
 }

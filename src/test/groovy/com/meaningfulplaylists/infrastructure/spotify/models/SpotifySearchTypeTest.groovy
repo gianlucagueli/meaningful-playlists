@@ -1,20 +1,16 @@
 package com.meaningfulplaylists.infrastructure.spotify.models
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 class SpotifySearchTypeTest extends Specification {
-    def "getType - should return the correct type for each enum"() {
-        given:
-        SpotifySearchType enumValue = currentEnum
-
-        when:
-        String result = enumValue.getType()
-
-        then:
-        result == expected
+    @Unroll
+    def "getType - '#expected' for SpotifySearchType.#enumName"() {
+        expect:
+        enumValue.getType() == expected
 
         where:
-        currentEnum                 | expected
-        SpotifySearchType.TRACK     | "track"
+        enumValue               | enumName          | expected
+        SpotifySearchType.TRACK | "TRACK"           | "track"
     }
 }
