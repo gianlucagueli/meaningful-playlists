@@ -13,6 +13,11 @@ public interface SpotifyApi {
         @Query("limit") int limit
     );
 
+    @GET("v1/tracks/{track_id}")
+    Call<SpotifyTrack> getTrack(
+            @Path("track_id") String trackId
+    );
+
     @GET("v1/me")
     Call<SpotifyUserProfile> getCurrentUserProfile(
             @Header("Authorization") String accessToken
