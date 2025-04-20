@@ -23,12 +23,7 @@ public class RetrofitUtils {
     RetrofitUtils(SpotifyAuthInterceptor spotifyAuthInterceptor,
                   @Value("${spring.config.environment}") String environment) {
         this.spotifyAuthInterceptor = spotifyAuthInterceptor;
-
-        this.httpLoggingInterceptor = new HttpLoggingInterceptor();
-        this.httpLoggingInterceptor.setLevel("prod".equals(environment)
-                ? HttpLoggingInterceptor.Level.BASIC
-                : HttpLoggingInterceptor.Level.BODY
-        );
+        this.httpLoggingInterceptor = createHttpLoggingInterceptor(environment);
     }
 
     public Retrofit buildRetrofit(String baseUrl) {
@@ -55,7 +50,7 @@ public class RetrofitUtils {
             }
             log.error("Unsuccessful Retrofit response from call [{}]: code={}, error={}", call.request().url(), response.code(), response.message());
         } catch (IOException e) {
-            log.error("", e);
+            log.error("IOException executing call: {}", call, e);
         }
 
         return Optional.empty();
@@ -72,6 +67,15 @@ public class RetrofitUtils {
                 .addInterceptor(httpLoggingInterceptor)
                 .addInterceptor(spotifyAuthInterceptor)
                 .build();
+    }
+
+    private HttpLoggingInterceptor createHttpLoggingInterceptor(String environment) {
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel("prod".equals(environment)
+                ? HttpLoggingInterceptor.Level.BASIC
+                : HttpLoggingInterceptor.Level.BODY
+        );
+        return interceptor;
     }
 
 }
