@@ -2,6 +2,7 @@ package com.meaningfulplaylists.controllers;
 
 import com.meaningfulplaylists.controllers.dto.CreatePlaylistRequest;
 import com.meaningfulplaylists.domain.models.Action;
+import com.meaningfulplaylists.domain.models.Playlist;
 import com.meaningfulplaylists.domain.usecases.CallbackUseCase;
 import com.meaningfulplaylists.domain.usecases.CreatePlaylistUseCase;
 import com.meaningfulplaylists.domain.usecases.RedirectUseCase;
@@ -35,7 +36,7 @@ public class SpotifyController {
     public ModelAndView redirect() {
         String url = this.redirectUseCase.execute(Action.CREATE_PLAYLIST);
 
-        ModelAndView mav = new ModelAndView("spotify/redirect-page");
+        ModelAndView mav = new ModelAndView("spotify/playlist-landing");
         mav.addObject("url", url);
 
         return mav;
@@ -44,17 +45,27 @@ public class SpotifyController {
     @GetMapping("/callback")
     public ModelAndView callback(@RequestParam String code, @RequestParam String state) {
         this.callbackUseCase.execute(code, state);
-        ModelAndView mav = new ModelAndView("spotify/create-playlist-form");
+        ModelAndView mav = new ModelAndView("spotify/playlist-create-form");
         mav.addObject("state", state);
+        mav.addObject("createPlaylistRequest", new CreatePlaylistRequest(state, "", ""));
         return mav;
     }
 
     @PostMapping()
-    public String create(@Valid CreatePlaylistRequest request) {
+    public ModelAndView create(@Valid CreatePlaylistRequest request) {
+        ModelAndView mav = new ModelAndView("spotify/playlist-created");;
 
         List<String> keywordList = StringUtils.tokenize(request.keywords());
         log.info("Creating playlist {} with keywords {}", request.playlistName(), keywordList);
 
-        return createPlaylistUseCase.createPlaylist(request.state(), request.playlistName(), keywordList).toString();
+        try {
+            Playlist playlist = createPlaylistUseCase.createPlaylist(request.state(), request.playlistName(), keywordList);
+
+            mav.addObject("playlistName", playlist.name());
+        } catch (Exception ignored) {
+            return new ModelAndView("spotify/playlist-error");
+        }
+
+        return mav;
     }
 }
