@@ -6,14 +6,17 @@ import com.meaningfulplaylists.infrastructure.redis.repository.ClientRedisReposi
 import com.meaningfulplaylists.infrastructure.redis.repository.UserRedisRepository;
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig;
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties;
+import com.meaningfulplaylists.infrastructure.spotify.exceptions.SpotifyAuthException;
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse;
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile;
 import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
-import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRedirectUrlFactory;
+import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRequestFactory;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import retrofit2.Call;
+
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -25,19 +28,19 @@ public class SpotifyAuthService implements AuthService {
     private final SpotifyProperties properties;
     private final ClientRedisRepository clientRepository;
     private final UserRedisRepository userRepository;
-    private final SpotifyRedirectUrlFactory urlFactory;
+    private final SpotifyRequestFactory requestFactory;
 
 
     SpotifyAuthService(SpotifyConfig configs,
                        SpotifyProperties properties,
                        ClientRedisRepository clientRepository,
                        UserRedisRepository userRepository,
-                       SpotifyRedirectUrlFactory urlFactory) {
+                       SpotifyRequestFactory requestFactory) {
         this.configs = configs;
         this.properties = properties;
         this.clientRepository = clientRepository;
         this.userRepository = userRepository;
-        this.urlFactory = urlFactory;
+        this.requestFactory = requestFactory;
     }
 
     @PostConstruct
@@ -51,12 +54,12 @@ public class SpotifyAuthService implements AuthService {
 
     @Override
     public String createRedirectUrl(Action action) {
-        String state = urlFactory.generateRandomState();
+        String state = requestFactory.generateRandomState();
         userRepository.saveState(state, "");
 
         log.info("Creating url for state: {}", state);
 
-        return urlFactory.generateRedirectUrl(state, action);
+        return requestFactory.generateRedirectUrl(state, action);
     }
 
     @Override
@@ -73,44 +76,43 @@ public class SpotifyAuthService implements AuthService {
     }
 
     public String getUserAuthorization(String userId) {
-        SpotifyTokenResponse tokenResponse = userRepository.findTokenByUserId(userId);
-
-        return "Bearer " + tokenResponse.accessToken();
+        return Optional.of(userRepository.findTokenByUserId(userId))
+                .map(SpotifyTokenResponse::accessToken)
+                .map(requestFactory::generateAuthHeader)
+                .orElseThrow();
     }
 
 
     private SpotifyTokenResponse exchangeCodeForToken(String code) {
-        Call<SpotifyTokenResponse> call = configs.getSpotifyAccount().getAccessToken(
-                SPOTIFY_AUTH_CREDENTIALS,
-                code,
-                properties.clientRedirectUri(),
-                properties.clientId(),
-                properties.clientSecret()
-        );
-
-        return RetrofitUtils.safeExecute(call)
-                .orElseThrow(() -> new RuntimeException("Error retrieving access token for code: " + code));
+        return executeGetAccessToken(SPOTIFY_AUTH_CREDENTIALS, code, properties.clientRedirectUri())
+                .orElseThrow(() -> new SpotifyAuthException("Error retrieving access token for code: " + code));
     }
 
     private void getClientToken() {
         log.info("Getting client token...");
-        Call<SpotifyTokenResponse> call = configs.getSpotifyAccount().getAccessToken(
-                SPOTIFY_CLIENT_CREDENTIALS,
-                null,
-                null,
-                properties.clientId(),
-                properties.clientSecret()
-        );
-
-        SpotifyTokenResponse response = RetrofitUtils.safeExecute(call)
-                .orElseThrow(() -> new RuntimeException("Error retrieving client auth token"));
+        SpotifyTokenResponse response = executeGetAccessToken(SPOTIFY_CLIENT_CREDENTIALS, null, null)
+                .orElseThrow(() -> new SpotifyAuthException("Error retrieving client auth token"));
 
         clientRepository.save(response);
         log.info("Client token retrieved successfully.");
     }
 
+    private Optional<SpotifyTokenResponse> executeGetAccessToken(String credentials, String code, String redirectUri) {
+        Call<SpotifyTokenResponse> call = configs.getSpotifyAccount().getAccessToken(
+                credentials,
+                code,
+                redirectUri,
+                properties.clientId(),
+                properties.clientSecret()
+        );
+
+        return RetrofitUtils.safeExecute(call);
+    }
+
     private String getCurrentUserId(String state, String accessToken) {
-        Call<SpotifyUserProfile> call = configs.getSpotifyApi().getCurrentUserProfile("Bearer " + accessToken);
+        String authHeader = requestFactory.generateAuthHeader(accessToken);
+
+        Call<SpotifyUserProfile> call = configs.getSpotifyApi().getCurrentUserProfile(authHeader);
 
         return RetrofitUtils.safeExecute(call)
                 .map(SpotifyUserProfile::id)

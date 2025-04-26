@@ -2,9 +2,11 @@ package com.meaningfulplaylists.infrastructure.retrofit
 
 import com.meaningfulplaylists.infrastructure.interceptors.SpotifyAuthInterceptor
 import okhttp3.HttpUrl
+import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
+import okio.Buffer
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -90,7 +92,11 @@ class RetrofitUtilsTest extends Specification {
 
     def "safeExecute should return empty when call is unsuccessful"() {
         given:
-        ResponseBody mockResponseBody = Mock(ResponseBody)
+        ResponseBody mockResponseBody = Mock(ResponseBody){
+            contentType() >> MediaType.parse("application/json")
+            contentLength() >> 12L
+            source() >> new Buffer().writeUtf8("Error message")
+        }
         Response fakeResponse = Response.error(401, mockResponseBody)
 
         when:
@@ -99,7 +105,6 @@ class RetrofitUtilsTest extends Specification {
         then:
         1 * mockCall.execute() >> fakeResponse
         1 * mockCall.request() >> GroovyMock(Request)
-        0 * _._
 
         and:
         result == Optional.empty()

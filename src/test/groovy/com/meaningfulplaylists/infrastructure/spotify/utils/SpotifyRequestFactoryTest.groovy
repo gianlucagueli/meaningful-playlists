@@ -3,25 +3,25 @@ package com.meaningfulplaylists.infrastructure.spotify.utils
 import com.meaningfulplaylists.domain.models.Action
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties
 import com.meaningfulplaylists.utils.TestUtils
-import org.apache.logging.log4j.util.Strings
 import spock.lang.Specification
+import spock.lang.Unroll
 
-class SpotifyRedirectUrlFactoryTest extends Specification {
-    SpotifyRedirectUrlFactory factory
+class SpotifyRequestFactoryTest extends Specification {
+    SpotifyRequestFactory factory
     SpotifyProperties fakeProperties
 
     void setup() {
         fakeProperties = TestUtils.createSpotifyProperties()
 
-        factory = new SpotifyRedirectUrlFactory(fakeProperties)
+        factory = new SpotifyRequestFactory(fakeProperties)
     }
 
-    def "GenerateRandomState - should generate a string with length 10"() {
+    def "GenerateRandomState - should generate a string with length 36"() {
         when:
         String result = factory.generateRandomState()
 
         then:
-        result.length() == 10
+        result.length() == 36
     }
 
     def "GenerateRandomState - should generate random string each time"() {
@@ -40,7 +40,7 @@ class SpotifyRedirectUrlFactoryTest extends Specification {
         given:
         String state = "state-1234"
         String defaultUrl = "${fakeProperties.accountBaseUrl()}authorize?" +
-                "response_type=${SpotifyRedirectUrlFactory.RESPONSE_TYPE}" +
+                "response_type=${SpotifyRequestFactory.RESPONSE_TYPE}" +
                 "&client_id=${fakeProperties.clientId()}" +
                 "&redirect_uri=${fakeProperties.clientRedirectUri()}" +
                 "&state=${state}"
@@ -53,7 +53,25 @@ class SpotifyRedirectUrlFactoryTest extends Specification {
 
         where:
         action                  | expectedEnding
-        Action.CREATE_PLAYLIST  | "&scope=playlist-modify-public playlist-modify-private user-read-private user-read-email"
-        null                    | Strings.EMPTY
+        Action.CREATE_PLAYLIST  | "&scope=user-read-private user-read-email playlist-modify-public playlist-modify-private"
+        null                    | "&scope=user-read-private user-read-email"
+    }
+
+    def "generateAuthHeader - should correctly format token '#token' to '#expected'"() {
+        when:
+        String result = factory.generateAuthHeader(token)
+
+        then:
+        result == expected
+
+        where:
+        token            | expected
+        "mytoken"        | "Bearer mytoken"
+        "Bearer token"   | "Bearer token"
+        "Bearer1"        | "Bearer Bearer1"
+        "Bearer "        | "Bearer "
+        null             | "Bearer null"
+        ""               | "Bearer "
+        " "              | "Bearer  "
     }
 }

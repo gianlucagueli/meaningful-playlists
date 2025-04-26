@@ -5,31 +5,24 @@ import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
+import java.util.UUID;
 
 @Component
-public class SpotifyRedirectUrlFactory {
+public class SpotifyRequestFactory {
     private static final String RESPONSE_TYPE = "code";
-    private static final String ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final int STATE_LENGTH = 10;
+    private static final String BEARER = "Bearer ";
 
     Random random;
 
     private final SpotifyProperties properties;
 
-    SpotifyRedirectUrlFactory(SpotifyProperties properties) {
+    SpotifyRequestFactory(SpotifyProperties properties) {
         this.properties = properties;
         random = new Random();
     }
 
     public String generateRandomState() {
-        StringBuilder sb = new StringBuilder(STATE_LENGTH);
-
-        for (int i = 0; i < STATE_LENGTH; i++) {
-            int index = random.nextInt(ALPHABET.length());
-            sb.append(ALPHABET.charAt(index));
-        }
-
-        return sb.toString();
+        return UUID.randomUUID().toString();
     }
 
     public String generateRedirectUrl(String state, Action action) {
@@ -41,12 +34,21 @@ public class SpotifyRedirectUrlFactory {
                 buildScope(action);
     }
 
-    // todo: da sistemare, un po brutto
-    private String buildScope(Action action) {
-        if (Action.CREATE_PLAYLIST == action) {
-            return "&scope=playlist-modify-public playlist-modify-private user-read-private user-read-email";
+    public String generateAuthHeader(String token) {
+        if (token != null && token.startsWith(BEARER)) {
+            return token;
         }
 
-        return "";
+        return BEARER + token;
+    }
+
+    private String buildScope(Action action) {
+        String scope = "&scope=user-read-private user-read-email";
+
+        if (Action.CREATE_PLAYLIST == action) {
+            scope += " playlist-modify-public playlist-modify-private";
+        }
+
+        return scope;
     }
 }

@@ -9,7 +9,7 @@ import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyConfig
 import com.meaningfulplaylists.infrastructure.spotify.configs.SpotifyProperties
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyTokenResponse
 import com.meaningfulplaylists.infrastructure.spotify.models.SpotifyUserProfile
-import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRedirectUrlFactory
+import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRequestFactory
 import com.meaningfulplaylists.utils.TestUtils
 import retrofit2.Call
 import retrofit2.Response
@@ -23,14 +23,14 @@ class SpotifyAuthServiceTest extends Specification {
     ClientRedisRepository mockClientRepository
     UserRedisRepository mockUserRepository
 
+    SpotifyRequestFactory mockRequestFactory;
     Call mockCall
-    SpotifyRedirectUrlFactory urlFactory;
 
     SpotifyAuthService authService
 
     void setup() {
         mockConfigs = Mock(SpotifyConfig)
-        urlFactory = Mock(SpotifyRedirectUrlFactory)
+        mockRequestFactory = Mock(SpotifyRequestFactory)
         fakeProperties = TestUtils.createSpotifyProperties()
         mockClientRepository = Mock(ClientRedisRepository)
         mockUserRepository = Mock(UserRedisRepository)
@@ -38,7 +38,7 @@ class SpotifyAuthServiceTest extends Specification {
         mockSpotifyApi = Mock(SpotifyApi)
         mockCall = Mock(Call)
 
-        authService = new SpotifyAuthService(mockConfigs, fakeProperties, mockClientRepository, mockUserRepository, urlFactory)
+        authService = new SpotifyAuthService(mockConfigs, fakeProperties, mockClientRepository, mockUserRepository, mockRequestFactory)
     }
 
     def "init - should avoid calling spotify if the token is already stored"() {
@@ -89,15 +89,15 @@ class SpotifyAuthServiceTest extends Specification {
         String result = authService.createRedirectUrl(action)
 
         then:
-        1 * urlFactory.generateRandomState() >> randomState
+        1 * mockRequestFactory.generateRandomState() >> randomState
         1 * mockUserRepository.saveState(randomState, "")
-        1 * urlFactory.generateRedirectUrl(randomState, action) >> generatedUrl
+        1 * mockRequestFactory.generateRedirectUrl(randomState, action) >> generatedUrl
 
         and:
         generatedUrl == result
     }
 
-    def "HandleCallback -"() {
+    def "HandleCallback - should correctly handle the callback from spotify"() {
         given:
         SpotifyTokenResponse fakeResponse = TestUtils.createSpotifyTokenResponse()
         SpotifyUserProfile fakeUserProfile = TestUtils.createSpotifyUserProfile()
@@ -116,6 +116,7 @@ class SpotifyAuthServiceTest extends Specification {
                 fakeProperties.clientSecret()
         ) >> mockCall
         1 * mockCall.execute() >> Response.success(fakeResponse)
+        1 * mockRequestFactory.generateAuthHeader(fakeResponse.accessToken()) >> "Bearer ${fakeResponse.accessToken()}"
         1 * mockConfigs.getSpotifyApi() >> mockSpotifyApi
         1 * mockSpotifyApi.getCurrentUserProfile("Bearer " + fakeResponse.accessToken()) >> mockCall
         1 * mockCall.execute() >> Response.success(fakeUserProfile)
@@ -152,6 +153,7 @@ class SpotifyAuthServiceTest extends Specification {
 
         then:
         1 * mockUserRepository.findTokenByUserId(userId) >> fakeResponse
+        1 * mockRequestFactory.generateAuthHeader(fakeResponse.accessToken()) >> "Bearer ${fakeResponse.accessToken()}"
 
         and:
         result == "Bearer ${fakeResponse.accessToken()}"

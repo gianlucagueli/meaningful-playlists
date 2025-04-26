@@ -27,7 +27,7 @@ class StringUtilsTest extends Specification {
 
     def "equals should correctly compare strings '#s1' and '#s2' with result #expected"() {
         when:
-        boolean result = StringUtils.equals(s1, s2)
+        boolean result = StringUtils.equalsNormalizedIgnoreCase(s1, s2)
 
         then:
         result == expected

@@ -6,6 +6,8 @@ import com.meaningfulplaylists.domain.usecases.CreatePlaylistUseCase;
 import com.meaningfulplaylists.domain.usecases.RedirectUseCase;
 import com.meaningfulplaylists.infrastructure.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -49,9 +51,9 @@ public class SpotifyController {
 
     @PostMapping()
     public String create(
-            @RequestParam String state,
-            @RequestParam String playlistName,
-            @RequestParam String keywords) {
+            @RequestParam @NotNull String state,
+            @RequestParam @NotNull String playlistName,
+            @RequestParam @NotNull String keywords) {
 
         List<String> keywordList = StringUtils.tokenize(keywords);
         log.info("Creating playlist {} with keywords {}", playlistName, keywordList);

@@ -30,15 +30,12 @@ public class StringUtils {
         return tokens;
     }
 
-    public static boolean equals(String s1, String s2) {
+    public static boolean equalsNormalizedIgnoreCase(String s1, String s2) {
         if (s1 == null || s2 == null) {
             return false;
         }
 
-        String strippedStr1 = normalize(s1);
-        String strippedStr2 = normalize(s2);
-
-        return strippedStr1.equalsIgnoreCase(strippedStr2);
+        return normalize(s1).equalsIgnoreCase(normalize(s2));
     }
 
     public static String combine(List<String> tokens) {

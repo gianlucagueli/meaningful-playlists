@@ -48,7 +48,12 @@ public class RetrofitUtils {
             if (response.isSuccessful()) {
                  return Optional.ofNullable(response.body());
             }
-            log.error("Unsuccessful Retrofit response from call [{}]: code={}, error={}", call.request().url(), response.code(), response.message());
+            log.error("Unsuccessful Retrofit response from call [{}]: code={}, error={}, errorBody={}",
+                    call.request().url(),
+                    response.code(),
+                    response.message(),
+                    response.errorBody() != null ? response.errorBody().string() : ""
+            );
         } catch (IOException e) {
             log.error("IOException executing call: {}", call, e);
         }

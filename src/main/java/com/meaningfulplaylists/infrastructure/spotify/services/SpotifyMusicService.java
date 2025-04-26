@@ -140,7 +140,7 @@ public class SpotifyMusicService implements MusicProvider {
     private Optional<SpotifyTrack> findMatchingTrack(String title, List<SpotifyTrack> tracks) {
         return tracks.stream()
                 .filter(track -> track.name() != null)
-                .filter(track -> StringUtils.equals(title, track.name()))
+                .filter(track -> StringUtils.equalsNormalizedIgnoreCase(title, track.name()))
                 .findFirst();
     }
 
