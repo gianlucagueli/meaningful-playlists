@@ -25,24 +25,7 @@ class RetrofitUtilsTest extends Specification {
         mockSpotifyAuthInterceptor = Mock(SpotifyAuthInterceptor)
         mockCall = Mock(Call)
 
-        retrofitUtils = new RetrofitUtils(mockSpotifyAuthInterceptor, "dev")
-    }
-
-    def "createHttpLoggingInterceptor - should correctly builds the interceptor based on the current environment"() {
-        when:
-        HttpLoggingInterceptor result = retrofitUtils.createHttpLoggingInterceptor(environment)
-
-        then:
-        result.level == expectedLevel
-
-        where:
-        environment     |  expectedLevel
-        "dev"           | HttpLoggingInterceptor.Level.BODY
-        "test"          | HttpLoggingInterceptor.Level.BODY
-        "stage"         | HttpLoggingInterceptor.Level.BODY
-        "random"        | HttpLoggingInterceptor.Level.BODY
-        "prod"          | HttpLoggingInterceptor.Level.BASIC
-
+        retrofitUtils = new RetrofitUtils(mockSpotifyAuthInterceptor)
     }
 
     def "buildRetrofit - should create Retrofit instance with correct configuration"() {

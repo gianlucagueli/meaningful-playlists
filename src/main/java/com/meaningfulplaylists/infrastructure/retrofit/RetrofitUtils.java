@@ -20,10 +20,9 @@ public class RetrofitUtils {
     private final SpotifyAuthInterceptor spotifyAuthInterceptor;
     private final HttpLoggingInterceptor httpLoggingInterceptor;
 
-    RetrofitUtils(SpotifyAuthInterceptor spotifyAuthInterceptor,
-                  @Value("${spring.config.environment}") String environment) {
+    RetrofitUtils(SpotifyAuthInterceptor spotifyAuthInterceptor) {
         this.spotifyAuthInterceptor = spotifyAuthInterceptor;
-        this.httpLoggingInterceptor = createHttpLoggingInterceptor(environment);
+        this.httpLoggingInterceptor = buildHttpLoggingInterceptor();
     }
 
     public Retrofit buildRetrofit(String baseUrl) {
@@ -74,12 +73,10 @@ public class RetrofitUtils {
                 .build();
     }
 
-    private HttpLoggingInterceptor createHttpLoggingInterceptor(String environment) {
+    private HttpLoggingInterceptor buildHttpLoggingInterceptor() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel("prod".equals(environment)
-                ? HttpLoggingInterceptor.Level.BASIC
-                : HttpLoggingInterceptor.Level.BODY
-        );
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BASIC);
+
         return interceptor;
     }
 }
