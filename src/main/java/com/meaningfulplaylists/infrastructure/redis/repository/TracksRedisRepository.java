@@ -17,10 +17,10 @@ public class TracksRedisRepository extends AbstractRedisRepository {
     }
 
     public void save(Track track) {
-        super.save(RedisNamespace.TRACK, track.name(), track);
+        super.save(RedisNamespace.TRACK, track.name().toLowerCase(), track);
     }
 
     public Optional<Track> findByName(String name) {
-        return super.find(RedisNamespace.TRACK, name, Track.class);
+        return super.find(RedisNamespace.TRACK, name.toLowerCase(), Track.class);
     }
 }
