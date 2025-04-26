@@ -15,7 +15,7 @@ public class RedirectUseCase {
     }
 
     public String execute(Action actionRequest) {
-        log.debug("Generating redirect URL");
+        log.debug("Generating redirect URL for action {}", actionRequest);
         return this.authService.createRedirectUrl(actionRequest);
     }
 }
