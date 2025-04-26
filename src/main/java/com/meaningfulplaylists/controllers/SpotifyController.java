@@ -1,13 +1,13 @@
 package com.meaningfulplaylists.controllers;
 
+import com.meaningfulplaylists.controllers.dto.CreatePlaylistRequest;
 import com.meaningfulplaylists.domain.models.Action;
 import com.meaningfulplaylists.domain.usecases.CallbackUseCase;
 import com.meaningfulplaylists.domain.usecases.CreatePlaylistUseCase;
 import com.meaningfulplaylists.domain.usecases.RedirectUseCase;
 import com.meaningfulplaylists.infrastructure.utils.StringUtils;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -50,14 +50,11 @@ public class SpotifyController {
     }
 
     @PostMapping()
-    public String create(
-            @RequestParam @NotNull String state,
-            @RequestParam @NotNull String playlistName,
-            @RequestParam @NotNull String keywords) {
+    public String create(@Valid CreatePlaylistRequest request) {
 
-        List<String> keywordList = StringUtils.tokenize(keywords);
-        log.info("Creating playlist {} with keywords {}", playlistName, keywordList);
+        List<String> keywordList = StringUtils.tokenize(request.keywords());
+        log.info("Creating playlist {} with keywords {}", request.playlistName(), keywordList);
 
-        return createPlaylistUseCase.createPlaylist(state, playlistName, keywordList).toString();
+        return createPlaylistUseCase.createPlaylist(request.state(), request.playlistName(), keywordList).toString();
     }
 }
