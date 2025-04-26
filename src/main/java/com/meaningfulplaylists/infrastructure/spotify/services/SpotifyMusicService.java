@@ -165,8 +165,9 @@ public class SpotifyMusicService implements MusicProvider {
         SpotifyAddTracksRequest addTracksRequest = new SpotifyAddTracksRequest(playlist.tracks().stream().map(Track::uri).toList(), 0);
         Call<Void> addTracksCall = spotifyConfig.getSpotifyApi().addTracksToPlaylist(authToken, playlistId, addTracksRequest);
 
-        RetrofitUtils.safeExecute(addTracksCall)
-                .orElseThrow(() -> new RuntimeException("Failed to add tracks to playlist"));
+        // fixme: Optional.of(Void) == Optional.empty, viene sempre tirata eccezione
+        RetrofitUtils.safeExecute(addTracksCall);
+                //.orElseThrow(() -> new RuntimeException("Failed to add tracks to playlist"));
     }
 
     private void loadUtilityTracks() {
