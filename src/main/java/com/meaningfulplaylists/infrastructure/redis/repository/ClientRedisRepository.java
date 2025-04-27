@@ -12,7 +12,7 @@ import java.util.Optional;
 @Repository
 public class ClientRedisRepository extends AbstractRedisRepository {
     private static final String CLIENT_KEY = "client";
-    private static final Long CLIENT_TTL = 3000L;
+    private static final Long CLIENT_TTL = 3600L;
 
     ClientRedisRepository(RedisTemplate<String, Object> redisTemplate) {
         super(redisTemplate);

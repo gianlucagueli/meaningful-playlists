@@ -13,10 +13,12 @@ import com.meaningfulplaylists.infrastructure.retrofit.RetrofitUtils;
 import com.meaningfulplaylists.infrastructure.spotify.utils.SpotifyRequestFactory;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import retrofit2.Call;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -88,6 +90,7 @@ public class SpotifyAuthService implements AuthService {
                 .orElseThrow(() -> new SpotifyAuthException("Error retrieving access token for code: " + code));
     }
 
+    @Scheduled(fixedRate = 3000, timeUnit = TimeUnit.SECONDS)
     private void getClientToken() {
         log.info("Getting client token...");
         SpotifyTokenResponse response = executeGetAccessToken(SPOTIFY_CLIENT_CREDENTIALS, null, null)
