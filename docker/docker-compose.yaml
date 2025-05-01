@@ -1,7 +1,16 @@
 services:
+  meaningful-playlist:
+    build: ..
+    container_name: meaningful-playlist-app
+    env_file: ../.env-local
+    ports:
+      - '9000:9000'
+    depends_on:
+      - redis
+
   redis:
     image: redis:7-alpine
-    container_name: redis_mp_local
+    container_name: redis_mp
     ports:
       - '6379:6379'
     volumes:
